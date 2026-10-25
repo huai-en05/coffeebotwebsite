@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoffeeBot Exchange</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center;}
+  .landing .mark-lg{width:64px;height:64px;border-radius:50%;background:var(--brown);display:flex;align-items:center;justify-content:center;margin-bottom:18px;}
+  .landing .mark-lg svg{width:32px;height:32px;color:#fff;}
+  .role-cards{display:flex;gap:20px;margin-top:30px;flex-wrap:wrap;justify-content:center;}
+  .role-card{
+    width:260px;background:var(--white);border:1px solid var(--divider);border-radius:var(--radius-lg);
+    padding:28px 24px;box-shadow:var(--shadow-sm);transition:box-shadow .15s, transform .15s;
+  }
+  .role-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+  .role-card .ic{width:44px;height:44px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+  .role-card h3{font-size:1.05rem;}
+  .role-card p{color:var(--brown-text);font-size:.85rem;margin:6px 0 18px;}
+</style>
+</head>
+<body>
+  <div class="landing">
+    <div class="mark-lg" id="markIcon"></div>
+    <div class="eyebrow">Coffee grounds, redistributed</div>
+    <h1>CoffeeBot Exchange</h1>
+    <p class="subtext" style="max-width:420px;">Connecting CoffeeBot's used coffee grounds with organisations that can put them to good use — composting, research, and more.</p>
+    <div class="role-cards">
+      <div class="role-card">
+        <div class="ic" id="custIcon"></div>
+        <h3>I'm an off-taker</h3>
+        <p>Submit requests for grounds, log your usage, and track your impact.</p>
+        <a class="btn-primary full" href="customer/login.html">Continue as Customer</a>
+      </div>
+      <div class="role-card">
+        <div class="ic" id="adminIcon"></div>
+        <h3>I'm CoffeeBot staff</h3>
+        <p>Manage collections, review requests, and view supply forecasts.</p>
+        <a class="btn-primary full" href="admin/login.html">Continue as Admin</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.getElementById("markIcon").innerHTML = CBUI.icon("coffee").replace('class="icon"','class="icon" style="width:32px;height:32px;color:#fff;"');
+    document.getElementById("custIcon").innerHTML = CBUI.icon("user").replace('class="icon"','class="icon" style="width:22px;height:22px;color:var(--brown-strong);"');
+    document.getElementById("adminIcon").innerHTML = CBUI.icon("dashboard").replace('class="icon"','class="icon" style="width:22px;height:22px;color:var(--brown-strong);"');
+  </script>
+</body>
+</html>

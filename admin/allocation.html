@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allocation Recommendation — CoffeeBot Admin</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">This week's allocation</div>
+        <h1>Allocation Recommendation</h1>
+        <p class="subtext">Ranked by quantity, consistency, and clarity of use case — the factors CoffeeBot staff said they actually weigh.</p>
+      </div>
+      <button class="btn-primary" id="approveAllBtn"><span id="icCheck"></span> Approve All</button>
+    </div>
+
+    <div id="feedbackBar" style="display:none;"></div>
+
+    <div class="grid grid-3" style="margin-bottom:20px;">
+      <div class="stat-tile"><div class="num" id="sPending">—</div><div class="lbl">Pending requests scored</div></div>
+      <div class="stat-tile green"><div class="num green" id="sFulfilled">—</div><div class="lbl">Fully fulfillable this week</div></div>
+      <div class="stat-tile amber"><div class="num amber" id="sSupply">—</div><div class="lbl">7-day forecasted supply</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Ranked recommendation</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>Rank</th><th>Requester</th><th>Region</th><th>Requested</th><th>Recommended</th><th>Frequency</th><th>Score</th><th></th></tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2><span id="icSparkle"></span> AI-enhanced explanation</h2>
+        <span class="ai-badge" id="aiStatusBadge"></span>
+      </div>
+      <p class="subtext" style="margin-bottom:12px;">Turns the table above into a short note an ops staffer can read before approving.</p>
+      <div id="aiKeyPrompt"></div>
+      <button class="btn-secondary" id="explainBtn" style="display:none;">Explain this allocation</button>
+      <div class="ai-panel" id="aiResult" style="display:none;"></div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/ai.js"></script>
+  <script>
+    const session = CBUI.requireAuth("admin");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "allocation.html" }));
+      document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
+      document.getElementById("icSparkle").innerHTML = CBUI.icon("sparkle", "icon-sm");
+
+      let result = CBAI.recommendAllocation();
+
+      function render() {
+        result = CBAI.recommendAllocation();
+        const { decisions, remainingSupply } = result;
+
+        document.getElementById("sPending").textContent = decisions.length;
+        document.getElementById("sFulfilled").textContent = decisions.filter((d) => d.fulfilled).length;
+        const totalSupply = Object.values(remainingSupply).reduce((a, b) => a + b, 0) +
+          decisions.reduce((a, d) => a + d.recommendedKg, 0);
+        document.getElementById("sSupply").textContent = totalSupply.toFixed(1) + " kg";
+
+        document.getElementById("rankBody").innerHTML = decisions.length
+          ? decisions.map((d, i) => `
+            <tr>
+              <td>#${i + 1}</td>
+              <td>${d.customer}</td>
+              <td><span class="pill region">${CB.regionName(d.region)}</span></td>
+              <td class="num">${d.volumeKg} kg</td>
+              <td class="num" style="font-weight:700;color:${d.fulfilled ? "var(--green)" : "var(--amber)"};">${d.recommendedKg} kg${d.fulfilled ? "" : " (partial)"}</td>
+              <td>${d.frequency}</td>
+              <td class="num">${d.score}</td>
+              <td><button class="btn-secondary" style="padding:6px 12px;" data-approve="${d.id}">Approve</button></td>
+            </tr>`).join("")
+          : `<tr><td colspan="8" style="text-align:center;color:#9a8a7a;font-style:italic;padding:20px;">No pending requests — everything's been decided.</td></tr>`;
+
+        decisions.forEach((d) => {
+          document.querySelector(`[data-approve="${d.id}"]`)?.addEventListener("click", () => approveOne(d.id, d.customer));
+        });
+      }
+
+      function showFeedback(msg) {
+        const bar = document.getElementById("feedbackBar");
+        bar.className = "feedback-bar";
+        bar.innerHTML = CBUI.icon("check", "icon-sm") + msg;
+        bar.style.display = "flex";
+        setTimeout(() => (bar.style.display = "none"), 4000);
+      }
+
+      function approveOne(id, customer) {
+        CB.setState((s) => {
+          const req = s.requests.find((r) => r.id === id);
+          if (req) req.status = "accepted";
+        });
+        showFeedback(`Allocation approved for ${customer}.`);
+        render();
+      }
+
+      document.getElementById("approveAllBtn").addEventListener("click", () => {
+        let count = 0;
+        CB.setState((s) => {
+          result.decisions.forEach((d) => {
+            const req = s.requests.find((r) => r.id === d.id);
+            if (req && req.status === "pending") { req.status = "accepted"; count++; }
+          });
+        });
+        if (count) showFeedback(`${count} request${count > 1 ? "s" : ""} approved for this week's allocation.`);
+        render();
+      });
+
+      render();
+
+      // ---- Gemini enhancement ----
+      function renderAiStatus() {
+        const has = CBAI.hasGeminiKey();
+        document.getElementById("aiStatusBadge").textContent = has ? "Gemini connected" : "Rule-based only";
+        document.getElementById("explainBtn").style.display = "inline-flex";
+        document.getElementById("aiKeyPrompt").innerHTML = has
+          ? `<button class="btn-ghost" id="clearKeyBtn">Disconnect Gemini key</button>`
+          : `<div class="field" style="max-width:420px;">
+               <label>Gemini API key (optional)</label>
+               <div class="input-box"><input type="password" id="geminiKeyInput" placeholder="Paste your Google AI Studio key"></div>
+               <span class="hint">Stored only in this browser's localStorage — never committed to the repo, never sent anywhere but Google's API.</span>
+               <button class="btn-secondary" id="saveKeyBtn" style="margin-top:8px;">Save key</button>
+             </div>`;
+        document.getElementById("saveKeyBtn")?.addEventListener("click", () => {
+          const v = document.getElementById("geminiKeyInput").value.trim();
+          if (v) { CBAI.setGeminiKey(v); renderAiStatus(); CBUI.toast("Gemini key saved to this browser."); }
+        });
+        document.getElementById("clearKeyBtn")?.addEventListener("click", () => {
+          CBAI.clearGeminiKey(); renderAiStatus(); CBUI.toast("Gemini key removed.");
+        });
+      }
+      renderAiStatus();
+
+      document.getElementById("explainBtn").addEventListener("click", async () => {
+        const resultEl = document.getElementById("aiResult");
+        resultEl.style.display = "block";
+        resultEl.textContent = "Thinking…";
+        try {
+          if (!CBAI.hasGeminiKey()) throw new Error("no_key");
+          const text = await CBAI.explainAllocation(result.decisions);
+          resultEl.textContent = text;
+        } catch (err) {
+          resultEl.textContent = fallbackNote();
+        }
+      });
+
+      function fallbackNote() {
+        const d = result.decisions;
+        if (!d.length) return "(Rule-based note) No pending requests to allocate this week.";
+        const partial = d.filter((x) => !x.fulfilled);
+        const top = d[0];
+        return `(Rule-based note — no Gemini key set) ${top.customer} ranks highest this week thanks to a recurring, clearly-described use case. ` +
+          (partial.length
+            ? `${partial.length} request${partial.length > 1 ? "s" : ""} (incl. ${partial[0].customer}) can't be fully supplied from this week's forecasted supply — worth a second look before approving, or consider a partial pickup.`
+            : `All pending requests are fully fulfillable from this week's forecasted supply.`);
+      }
+    }
+  </script>
+</body>
+</html>

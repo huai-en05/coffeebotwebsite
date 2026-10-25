@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — CoffeeBot Exchange</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Your impact</div>
+      <h1>Dashboard</h1>
+      <p class="subtext">Impact is the headline here, not revenue — in line with CoffeeBot's own priorities.</p>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:20px;">
+      <div class="stat-tile"><div class="num" id="statKg">—</div><div class="lbl">Grounds received to date</div></div>
+      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
+      <div class="stat-tile amber"><div class="num amber" id="statRating">—</div><div class="lbl">Avg. soil rating</div></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2>Compost Produced by Week (kg)</h2>
+        <span class="pill region" id="regionPill"></span>
+      </div>
+      <div id="compostChart" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Usage Log</h2>
+      <p class="subtext" style="margin-bottom:10px;">Post-delivery outcomes — what you made, and how it performed.</p>
+      <div class="row-list" id="usageLog"></div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("customer");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "dashboard.html" }));
+      const MY_NAME = "Simei RC Community Garden";
+      const MY_REGION = "east";
+      document.getElementById("regionPill").textContent = CB.regionName(MY_REGION);
+
+      const state = CB.getState();
+      const partner = state.partners.find((p) => p.name === MY_NAME);
+      const myUsage = state.usageLogs.filter((u) => u.customer === MY_NAME);
+
+      document.getElementById("statKg").textContent = (partner ? partner.kgReceived : 0).toFixed(1) + " kg";
+      document.getElementById("statCo2").textContent = "~" + (partner ? partner.co2eKg : 0).toFixed(1) + " kg";
+      const avgRating = myUsage.length ? (myUsage.reduce((a, u) => a + u.soilRating, 0) / myUsage.length).toFixed(1) : "—";
+      document.getElementById("statRating").textContent = avgRating + (myUsage.length ? " / 5" : "");
+
+      // Weekly compost chart — bucket usage logs (+ a little demo history) into the last 6 weeks.
+      const weeks = ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6"];
+      const demoBase = [3.2, 4.0, 3.6, 5.1, 4.4, 0];
+      const now = Date.now(), msWeek = 7 * 86400000;
+      const actual = [0, 0, 0, 0, 0, 0];
+      myUsage.forEach((u) => {
+        const weeksAgo = Math.floor((now - u.loggedAt) / msWeek);
+        const idx = 5 - weeksAgo;
+        if (idx >= 0 && idx < 6) actual[idx] += u.compostKg;
+      });
+      const values = demoBase.map((b, i) => Math.round((b + actual[i]) * 10) / 10);
+
+      CBUI.barChart({
+        container: "#compostChart",
+        labels: weeks,
+        series: [{ values, color: "var(--brown)" }],
+        formatY: (v) => v + "kg",
+      });
+
+      const list = document.getElementById("usageLog");
+      list.innerHTML = myUsage.length
+        ? myUsage.map((u) => `
+          <div class="row">
+            <div class="row-main">
+              <div class="title">${u.compostKg} kg compost made</div>
+              <div class="meta">Soil rating ${u.soilRating}/5 · ~${(u.compostKg * 2.8).toFixed(1)} kg CO2e saved (est.)</div>
+              <div class="meta">${CB.fmtDate(u.loggedAt)}</div>
+            </div>
+          </div>`).join("")
+        : '<div class="empty-note">No usage logged yet. <a href="order.html#usage">Log your first week →</a></div>';
+    }
+  </script>
+</body>
+</html>

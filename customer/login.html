@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Log In — CoffeeBot Exchange</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div class="page">
+    <a href="../index.html" class="brand" style="margin-bottom:10px;display:inline-flex;">
+      <span class="mark" id="markIcon"></span> CoffeeBot Exchange
+    </a>
+    <div class="card login-card">
+      <div class="eyebrow">Customer / Off-taker</div>
+      <h1 style="font-size:1.5rem;">Log in</h1>
+      <p class="subtext" style="margin-bottom:22px;">Access your requests, usage logs, and impact dashboard.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <div class="input-box">
+            <span id="mailIcon"></span>
+            <input type="email" id="email" placeholder="customer@gmail.com" required value="customer@gmail.com">
+          </div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-box">
+            <span id="lockIcon"></span>
+            <input type="password" id="password" placeholder="••••••••" required value="coffeebot123">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary full">Log In</button>
+      </form>
+      <p class="subtext" style="margin-top:16px;font-size:.8rem;">Demo account prefilled — just click Log In.</p>
+    </div>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.getElementById("markIcon").innerHTML = CBUI.icon("coffee","icon-sm");
+    document.getElementById("mailIcon").innerHTML = CBUI.icon("mail","icon-sm");
+    document.getElementById("lockIcon").innerHTML = CBUI.icon("lock","icon-sm");
+
+    // Already logged in? skip straight to home.
+    if (CB.getState().auth.customer) window.location.href = "home.html";
+
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim() || "customer@gmail.com";
+      CBUI.login("customer", email);
+      window.location.href = "home.html";
+    });
+  </script>
+</body>
+</html>

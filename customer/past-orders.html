@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Past Orders — CoffeeBot Exchange</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">History</div>
+      <h1>Past Orders</h1>
+      <p class="subtext">Your request &amp; order status history — accepted, declined, and pending, with dates and times.</p>
+    </div>
+
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr><th>Ticket</th><th>Use case</th><th>Region</th><th>Volume</th><th>Frequency</th><th>Date &amp; time</th><th>Status</th></tr>
+        </thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+      <div id="emptyNote" class="empty-note" style="display:none;">No past orders yet.</div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("customer");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "past-orders.html" }));
+      const MY_NAME = "Simei RC Community Garden";
+      const state = CB.getState();
+      const mine = state.requests.filter((r) => r.customer === MY_NAME).sort((a, b) => b.createdAt - a.createdAt);
+
+      const body = document.getElementById("ordersBody");
+      if (!mine.length) {
+        document.getElementById("emptyNote").style.display = "block";
+        body.closest("table").style.display = "none";
+      } else {
+        body.innerHTML = mine.map((r) => `
+          <tr>
+            <td>${r.id}</td>
+            <td>${r.useCase}</td>
+            <td><span class="pill region">${CB.regionName(r.region)}</span></td>
+            <td class="num">${r.volumeKg} kg</td>
+            <td>${r.frequency}</td>
+            <td>${CB.fmtDate(r.createdAt)}</td>
+            <td><span class="pill ${r.status}">${r.status}</span></td>
+          </tr>`).join("");
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upload Collection — CoffeeBot Admin</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page page-narrow">
+    <div class="page-head">
+      <div class="eyebrow">Daily collection</div>
+      <h1>Upload today's collection</h1>
+      <p class="subtext">There's no automated tracking system yet — staff log grounds whenever they service a machine, by region.</p>
+    </div>
+
+    <div class="card">
+      <form id="uploadForm">
+        <div class="field">
+          <label>Region</label>
+          <div class="input-box"><select id="uRegion" required></select></div>
+          <span class="hint" id="regionHint"></span>
+        </div>
+        <div class="field">
+          <label>Grounds collected (kg)</label>
+          <div class="input-box"><input type="number" id="uKg" placeholder="4.5" step="0.1" min="0.1" required></div>
+        </div>
+        <div class="field">
+          <label>Staff / team</label>
+          <div class="input-box"><input type="text" id="uStaff" placeholder="e.g. Ops Team" value="Ops Team"></div>
+        </div>
+        <button type="submit" class="btn-primary full">Log collection</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Recent collections</h2>
+      <div class="row-list" id="collectionsList"></div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("admin");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
+      document.getElementById("uRegion").innerHTML = CBUI.regionOptions();
+
+      function updateHint() {
+        const r = CB.regionById(document.getElementById("uRegion").value);
+        document.getElementById("regionHint").textContent =
+          r ? `${r.location} · ~${r.cupsPerMonth} cups/month · ~${CB.dailyGroundsKg(r).toFixed(1)} kg/day baseline` : "";
+      }
+      document.getElementById("uRegion").addEventListener("change", updateHint);
+      updateHint();
+
+      function renderCollections() {
+        const state = CB.getState();
+        const list = [...state.collections].sort((a, b) => b.collectedAt - a.collectedAt).slice(0, 10);
+        document.getElementById("collectionsList").innerHTML = list.map((c) => `
+          <div class="row">
+            <div class="row-main">
+              <div class="title">${c.kg} kg <span class="pill region" style="margin-left:6px;">${CB.regionName(c.region)}</span></div>
+              <div class="meta">${c.staff} · ${CB.fmtDate(c.collectedAt)}</div>
+            </div>
+          </div>`).join("");
+      }
+      renderCollections();
+
+      document.getElementById("uploadForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const region = document.getElementById("uRegion").value;
+        const kg = parseFloat(document.getElementById("uKg").value) || 0;
+        const staff = document.getElementById("uStaff").value.trim() || "Ops Team";
+        CB.setState((s) => {
+          s.collections.unshift({ id: CB.nextId("C", s.collections), region, kg, staff, collectedAt: Date.now() });
+          s.wasteHistory.push({ date: Date.now(), kg });
+          if (s.wasteHistory.length > 30) s.wasteHistory.shift();
+        });
+        CBUI.toast("Collection logged!");
+        document.getElementById("uploadForm").reset();
+        document.getElementById("uStaff").value = "Ops Team";
+        updateHint();
+        renderCollections();
+      });
+    }
+  </script>
+</body>
+</html>

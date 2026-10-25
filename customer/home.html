@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — CoffeeBot Exchange</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Welcome back</div>
+      <h1 id="greeting">Hello!</h1>
+      <p class="subtext">Here's a quick look at your activity with CoffeeBot.</p>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom:22px;">
+      <div class="stat-tile"><div class="num" id="statTotalKg">—</div><div class="lbl">Grounds received to date</div></div>
+      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
+      <div class="stat-tile amber"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:10px;">
+          <h2>Quick actions</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a class="btn-primary full" href="order.html"><span id="icUpload"></span> Submit this week's request</a>
+          <a class="btn-secondary full" href="order.html#usage"><span id="icLeaf"></span> Log last week's usage</a>
+          <a class="btn-secondary full" href="dashboard.html"><span id="icDash"></span> View impact dashboard</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent requests</h2>
+        <div class="row-list" id="recentRequests"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("customer");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "home.html" }));
+      document.getElementById("greeting").textContent = "Hello, " + session.email.split("@")[0] + "!";
+      document.getElementById("icUpload").innerHTML = CBUI.icon("upload", "icon-sm");
+      document.getElementById("icLeaf").innerHTML = CBUI.icon("leaf", "icon-sm");
+      document.getElementById("icDash").innerHTML = CBUI.icon("dashboard", "icon-sm");
+
+      const state = CB.getState();
+      const myName = "Simei RC Community Garden"; // demo identity for this logged-in off-taker
+      const mine = state.requests.filter((r) => r.customer === myName);
+      const myPartner = state.partners.find((p) => p.name === myName);
+
+      document.getElementById("statTotalKg").textContent = (myPartner ? myPartner.kgReceived : 0).toFixed(1) + " kg";
+      document.getElementById("statCo2").textContent = "~" + (myPartner ? myPartner.co2eKg : 0).toFixed(1) + " kg";
+      document.getElementById("statPending").textContent = mine.filter((r) => r.status === "pending").length;
+
+      const list = document.getElementById("recentRequests");
+      if (mine.length === 0) {
+        list.innerHTML = '<div class="empty-note">No requests yet.</div>';
+      } else {
+        list.innerHTML = mine
+          .slice(0, 4)
+          .map(
+            (r) => `
+          <div class="row">
+            <div class="row-main">
+              <div class="title">${r.useCase}</div>
+              <div class="meta">${r.volumeKg} kg · ${r.frequency} · ${CB.fmtDate(r.createdAt)}</div>
+            </div>
+            <span class="pill ${r.status}">${r.status}</span>
+          </div>`
+          )
+          .join("");
+      }
+    }
+  </script>
+</body>
+</html>

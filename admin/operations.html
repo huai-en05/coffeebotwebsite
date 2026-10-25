@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operations Dashboard — CoffeeBot Admin</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Operations</div>
+        <h1>Operations Dashboard</h1>
+        <p class="subtext">Pending requests awaiting a decision, plus reuse &amp; impact analytics.</p>
+      </div>
+      <button class="btn-secondary" id="approveAllBtn"><span id="icCheck"></span> Approve all pending</button>
+    </div>
+
+    <div id="feedbackBar" style="display:none;"></div>
+
+    <div class="card">
+      <h2>Pending &amp; recent requests</h2>
+      <div class="row-list" id="requestsList"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:4px;">
+        <h2>Reuse &amp; Impact Analytics</h2>
+      </div>
+      <p class="subtext" style="margin-bottom:16px;">Cumulative outcomes across all regions and partners.</p>
+
+      <div class="grid grid-4" style="margin-bottom:22px;">
+        <div class="stat-tile green"><div class="num green" id="aCo2">—</div><div class="lbl">Cumulative CO2e saved</div></div>
+        <div class="stat-tile"><div class="num" id="aTopSegment">—</div><div class="lbl">Top region by volume</div></div>
+        <div class="stat-tile amber"><div class="num amber" id="aSoil">—</div><div class="lbl">Avg. soil improvement rating</div></div>
+        <div class="stat-tile"><div class="num" id="aAccuracy">—</div><div class="lbl">Forecast accuracy (6wk avg)</div></div>
+      </div>
+
+      <h3 style="margin-bottom:8px;">Waste Diverted by Day (kg)</h3>
+      <div id="wasteChart" style="margin-bottom:24px;"></div>
+
+      <h3 style="margin-bottom:10px;">Volume by Region</h3>
+      <div id="segmentBars"></div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("admin");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "operations.html" }));
+      document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
+
+      function showFeedback(msg) {
+        const bar = document.getElementById("feedbackBar");
+        bar.className = "feedback-bar";
+        bar.innerHTML = CBUI.icon("check", "icon-sm") + msg;
+        bar.style.display = "flex";
+        setTimeout(() => (bar.style.display = "none"), 4000);
+      }
+
+      function renderRequests() {
+        const state = CB.getState();
+        const list = [...state.requests].sort((a, b) => b.createdAt - a.createdAt);
+        document.getElementById("requestsList").innerHTML = list.map((r) => `
+          <div class="row">
+            <div class="row-main">
+              <div class="title">${r.customer} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
+              <div class="meta">${r.useCase}</div>
+              <div class="meta">${r.volumeKg} kg · ${r.frequency} · ${CB.fmtDate(r.createdAt)}</div>
+            </div>
+            <div class="row-actions">
+              ${r.status === "pending" ? `
+                <button class="btn-secondary" style="padding:8px 14px;" data-decline="${r.id}">Decline</button>
+                <button class="btn-primary" style="padding:8px 14px;" data-accept="${r.id}">Accept</button>
+              ` : `<span class="pill ${r.status}">${r.status}</span>`}
+            </div>
+          </div>`).join("");
+
+        list.filter((r) => r.status === "pending").forEach((r) => {
+          document.querySelector(`[data-accept="${r.id}"]`)?.addEventListener("click", () => decide(r.id, "accepted"));
+          document.querySelector(`[data-decline="${r.id}"]`)?.addEventListener("click", () => decide(r.id, "declined"));
+        });
+      }
+
+      function decide(id, status) {
+        let customer = "";
+        CB.setState((s) => {
+          const req = s.requests.find((r) => r.id === id);
+          if (req) { req.status = status; customer = req.customer; }
+        });
+        showFeedback(`Request from ${customer} ${status}.`);
+        renderRequests();
+      }
+
+      document.getElementById("approveAllBtn").addEventListener("click", () => {
+        let count = 0;
+        CB.setState((s) => {
+          s.requests.forEach((r) => { if (r.status === "pending") { r.status = "accepted"; count++; } });
+        });
+        if (count) showFeedback(`${count} pending request${count > 1 ? "s" : ""} accepted.`);
+        renderRequests();
+      });
+
+      renderRequests();
+
+      /* ---------- analytics ---------- */
+      const state = CB.getState();
+      const totalCo2 = state.partners.reduce((a, p) => a + p.co2eKg, 0);
+      document.getElementById("aCo2").textContent = "~" + totalCo2.toFixed(1) + " kg";
+
+      const byRegionVol = {};
+      state.partners.forEach((p) => { byRegionVol[p.region] = (byRegionVol[p.region] || 0) + p.kgReceived; });
+      const topRegionId = Object.keys(byRegionVol).sort((a, b) => byRegionVol[b] - byRegionVol[a])[0];
+      document.getElementById("aTopSegment").textContent = topRegionId ? CB.regionName(topRegionId) : "—";
+
+      const avgSoil = state.usageLogs.length
+        ? (state.usageLogs.reduce((a, u) => a + u.soilRating, 0) / state.usageLogs.length).toFixed(1)
+        : "—";
+      document.getElementById("aSoil").textContent = avgSoil + (state.usageLogs.length ? " / 5" : "");
+
+      document.getElementById("aAccuracy").textContent = "91%"; // see Forecast page for the full accuracy chart
+
+      // waste-by-day chart (last 7 of the stored history)
+      const hist = state.wasteHistory.slice(-7);
+      CBUI.barChart({
+        container: "#wasteChart",
+        labels: hist.map((h) => new Date(h.date).toLocaleDateString("en-SG", { weekday: "short" })),
+        series: [{ values: hist.map((h) => h.kg), color: "var(--brown)" }],
+        formatY: (v) => v + "kg",
+      });
+
+      // volume-by-region proportional bars
+      const totalVol = CB.REGIONS.reduce((a, r) => a + (byRegionVol[r.id] || 0), 0) || 1;
+      document.getElementById("segmentBars").innerHTML = CB.REGIONS.map((r) => {
+        const v = byRegionVol[r.id] || 0;
+        const pct = Math.round((v / totalVol) * 100);
+        return `
+          <div style="margin-bottom:14px;">
+            <div class="flex-between" style="margin-bottom:5px;">
+              <span style="font-size:.85rem;font-weight:600;">${r.name} <span class="subtext" style="font-size:.78rem;">(${r.location})</span></span>
+              <span style="font-size:.85rem;font-weight:700;">${v.toFixed(1)} kg · ${pct}%</span>
+            </div>
+            <div style="background:var(--gridline);border-radius:6px;height:10px;overflow:hidden;">
+              <div style="background:var(--brown);height:100%;width:${pct}%;border-radius:6px;"></div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+  </script>
+</body>
+</html>

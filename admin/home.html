@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — CoffeeBot Admin</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div id="topbarMount"></div>
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Operations overview</div>
+      <h1 id="greeting">Welcome back!</h1>
+      <p class="subtext">Latest requests, collections, and quick links across all 5 regions.</p>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:22px;">
+      <div class="stat-tile"><div class="num" id="statKg">—</div><div class="lbl">Grounds diverted to date</div></div>
+      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
+      <div class="stat-tile amber"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
+      <div class="stat-tile"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:10px;">
+          <h2>Quick actions</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <a class="btn-primary full" href="upload.html"><span id="icUpload"></span> Upload today's collection</a>
+          <a class="btn-secondary full" href="operations.html"><span id="icOps"></span> Review pending requests</a>
+          <a class="btn-secondary full" href="forecast.html"><span id="icTrend"></span> View supply forecast</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Latest customer requests</h2>
+        <div class="row-list" id="latestRequests"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    const session = CBUI.requireAuth("admin");
+    if (session) {
+      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "home.html" }));
+      document.getElementById("greeting").textContent = "Welcome back, " + session.email.split("@")[0] + "!";
+      document.getElementById("icUpload").innerHTML = CBUI.icon("upload", "icon-sm");
+      document.getElementById("icOps").innerHTML = CBUI.icon("dashboard", "icon-sm");
+      document.getElementById("icTrend").innerHTML = CBUI.icon("trend", "icon-sm");
+
+      const state = CB.getState();
+      const totalKg = state.partners.reduce((a, p) => a + p.kgReceived, 0);
+      const totalCo2 = state.partners.reduce((a, p) => a + p.co2eKg, 0);
+      document.getElementById("statKg").textContent = totalKg.toFixed(1) + " kg";
+      document.getElementById("statCo2").textContent = "~" + totalCo2.toFixed(1) + " kg";
+      document.getElementById("statPending").textContent = state.requests.filter((r) => r.status === "pending").length;
+      document.getElementById("statPartners").textContent = state.partners.length;
+
+      const latest = [...state.requests].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
+      document.getElementById("latestRequests").innerHTML = latest.map((r) => `
+        <div class="row">
+          <div class="row-main">
+            <div class="title">${r.customer} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
+            <div class="meta">${r.useCase}</div>
+            <div class="meta">${r.volumeKg} kg · ${CB.fmtDate(r.createdAt)}</div>
+          </div>
+          <span class="pill ${r.status}">${r.status}</span>
+        </div>`).join("");
+    }
+  </script>
+</body>
+</html>
