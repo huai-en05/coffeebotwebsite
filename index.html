@@ -7,54 +7,57 @@
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .wrap{max-width:1240px;margin:0 auto;padding:0 32px;}
-  .site-nav .nav-right{gap:22px;}
-  .site-nav .nav-right > a:not(.btn-arrow){font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--brown);}
+  .site-nav .nav-right > a:not(.btn-primary){font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  .site-nav .nav-right > a:not(.btn-primary):hover{color:var(--cream);}
 
-  .hero{padding:56px 0 40px;text-align:center;}
-  .hero h1{font-size:clamp(3rem,7.5vw,6.4rem);font-weight:800;line-height:.92;letter-spacing:-.035em;max-width:980px;margin:0 auto;}
+  .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:72px 0 64px;}
+  .hero h1{font-size:clamp(3rem,6vw,5.4rem);line-height:1;}
   .hero h1 em{font-style:normal;color:var(--caramel);}
-  .hero .hand-line{font-family:var(--font-hand);font-size:1.7rem;font-weight:700;color:var(--brown);margin:14px 0 0;}
-  .hero-grid{display:grid;grid-template-columns:1fr 300px 1fr;gap:32px;align-items:center;margin-top:30px;text-align:left;}
-  .hero-grid .mascot{width:300px;height:300px;color:var(--brown);}
-  .feature{display:flex;gap:14px;margin:22px 0;}
-  .feature .ic{width:38px;height:38px;flex:0 0 auto;color:var(--caramel);}
-  .feature .ic .icon{width:38px;height:38px;stroke-width:1.3;}
-  .feature h3{font-size:1.4rem;}
-  .feature p{margin:4px 0 0;font-size:.92rem;color:var(--muted);max-width:250px;}
-  .hero-ctas{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:24px;flex-wrap:wrap;}
+  .hero .lede{color:var(--muted);font-size:1.05rem;max-width:460px;margin:22px 0 30px;}
+  .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;}
+  .hero-stats{display:flex;gap:44px;margin-top:44px;}
+  .hero-stats strong{display:block;font-family:var(--font-display);font-weight:400;font-size:2.2rem;line-height:1;}
+  .hero-stats span{font-size:.7rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
 
-  .band{background:var(--espresso);color:var(--cream);padding:56px 0 60px;}
-  .band h2{color:var(--cream);font-size:clamp(2.4rem,5vw,4.2rem);font-weight:800;line-height:.95;letter-spacing:-.03em;text-align:center;}
-  .band .hand-line{font-family:var(--font-hand);font-size:1.5rem;color:var(--caramel);text-align:center;margin:10px 0 36px;}
-  .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;}
-  .facts .ic{color:var(--caramel);display:flex;justify-content:center;margin-bottom:10px;}
-  .facts .ic .icon{width:28px;height:28px;stroke-width:1.4;}
-  .facts strong{display:block;font-family:var(--font-display);font-stretch:80%;font-weight:700;font-size:2.6rem;line-height:1;color:var(--cream);}
-  .facts span{display:block;font-size:.88rem;color:rgba(251,245,232,.72);margin-top:8px;max-width:220px;margin-left:auto;margin-right:auto;}
-  .band .torn-top{margin-top:-1px;}
+  .bento{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:170px;gap:14px;}
+  .tile{border-radius:var(--radius);padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;background:var(--surface);border:1px solid var(--line);}
+  .tile strong{font-family:var(--font-display);font-weight:400;font-size:2.6rem;line-height:1;}
+  .tile span{font-size:.86rem;color:var(--muted);}
+  .tile.wide{grid-column:span 2;}
+  .tile.caramel{background:var(--caramel);border-color:var(--caramel);color:var(--bg);}
+  .tile.caramel span{color:rgba(37,25,18,.75);}
+  .tile.sage{background:#3d4434;border-color:#4b5340;}
+  .tile.sage strong{color:var(--ok);}
+  .tile .kicker{color:inherit;opacity:.7;}
 
-  .doors{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:60px 0;}
-  .door{border:1.5px solid var(--espresso);border-radius:28px;padding:30px 30px 28px;display:grid;grid-template-columns:150px 1fr;gap:24px;align-items:center;background:var(--paper);}
-  .door .doodle{width:150px;height:150px;color:var(--brown);}
-  .door p{color:var(--muted);font-size:.93rem;margin:8px 0 16px;}
-  .door .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
-  .door .pills span{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:4px 11px;color:var(--brown);}
-  .door h2{font-size:2rem;}
+  .section{padding:64px 0;border-top:1px solid var(--line);}
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap;}
+  .section-head h2{font-size:clamp(2rem,3.6vw,3rem);line-height:1.05;}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;}
+  .step .n{font-family:var(--font-display);font-size:1.1rem;color:var(--caramel);}
+  .step h3{font-size:1.5rem;margin:28px 0 8px;}
+  .step p{margin:0;font-size:.9rem;color:var(--muted);}
 
-  .site-foot{border-top:1px solid var(--line);padding:22px 0 36px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);}
+  .doors{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .door{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:32px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
+  .door h2{font-size:2.2rem;}
+  .door p{margin:0 0 6px;color:var(--muted);max-width:420px;}
 
-  @media(max-width:960px){
-    .hero-grid{grid-template-columns:1fr;justify-items:center;}
-    .hero-grid .mascot{order:-1;width:220px;height:220px;}
-    .hero-grid > div{width:100%;max-width:420px;}
-    .facts{grid-template-columns:1fr 1fr;}
+  .site-foot{border-top:1px solid var(--line);padding:24px 0 40px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);}
+
+  @media(max-width:980px){
+    .hero{grid-template-columns:1fr;padding-top:44px;gap:40px;}
+    .steps{grid-template-columns:1fr 1fr;}
     .doors{grid-template-columns:1fr;}
   }
   @media(max-width:560px){
     .wrap{padding:0 16px;}
-    .site-nav .nav-right > a:not(.btn-arrow){display:none;}
-    .door{grid-template-columns:1fr;}
-    .door .doodle{width:120px;height:120px;}
+    .site-nav .nav-right > a:not(.btn-primary){display:none;}
+    .hero-stats{gap:24px;}
+    .bento{grid-auto-rows:140px;}
+    .tile strong{font-size:2rem;}
+    .steps{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -63,108 +66,77 @@
     <div class="topbar-inner">
       <nav class="nav-links">
         <a href="#how">How it works</a>
-        <a href="#impact">Impact</a>
         <a href="#join">Join us</a>
       </nav>
-      <a class="brand" href="index.html">
-        <span class="mark"><span data-doodle="mascot" class=""></span></span>
-        <span class="brand-name">CoffeeBot<span>exchange</span></span>
-      </a>
+      <a class="brand" href="index.html">CoffeeBot <em>Exchange</em></a>
       <div class="nav-right">
         <a href="admin/login.html">Staff log in</a>
-        <a class="btn-arrow" href="customer/login.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="navArrow"></span></a>
+        <a class="btn-primary" href="customer/login.html">Request grounds</a>
       </div>
     </div>
   </header>
 
-  <section class="hero swirl-bg" id="how">
-    <span data-swirl></span>
-    <div class="wrap">
-      <h1>Every Cup Leaves <em>Something</em> Behind</h1>
-      <p class="hand-line">~ we put it back in the ground ~</p>
-
-      <div class="hero-grid">
-        <div>
-          <div class="feature">
-            <div class="ic" id="ic1"></div>
-            <div><h3>Brewed</h3><p>Our machines at polytechnics, hospitals and offices pour ~3,900 cups a month.</p></div>
-          </div>
-          <div class="feature">
-            <div class="ic" id="ic2"></div>
-            <div><h3>Collected</h3><p>Staff empty the grounds bin on every service round and log it by region.</p></div>
-          </div>
-        </div>
-        <span data-doodle="mascot" class="mascot"></span>
-        <div>
-          <div class="feature">
-            <div class="ic" id="ic3"></div>
-            <div><h3>Matched</h3><p>Each week's supply goes to the partners with the most consistent, clearest use.</p></div>
-          </div>
-          <div class="feature">
-            <div class="ic" id="ic4"></div>
-            <div><h3>Regrown</h3><p>Grounds become compost, soil and student research — and partners log the results.</p></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-ctas">
-        <a class="btn-arrow" href="customer/login.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="heroArrow"></span></a>
-        <a class="btn-secondary" href="admin/login.html">I'm CoffeeBot staff</a>
-      </div>
-    </div>
-  </section>
-
-  <span data-torn=""></span>
-  <section class="band" id="impact">
-    <div class="wrap">
-      <h2>Small Grams, Adding Up</h2>
-      <p class="hand-line">based on CoffeeBot's own numbers</p>
-      <div class="facts">
-        <div><div class="ic" id="f1"></div><strong>~35 kg</strong><span>of grounds every month across our five regions</span></div>
-        <div><div class="ic" id="f2"></div><strong>~420 kg</strong><span>a year that can stay out of landfill</span></div>
-        <div><div class="ic" id="f3"></div><strong>~15 g</strong><span>left behind by every coffee-based cup</span></div>
-        <div><div class="ic" id="f4"></div><strong>$0</strong><span>the usual price — impact comes before revenue</span></div>
-      </div>
-    </div>
-  </section>
-  <span data-torn="flip"></span>
-
   <div class="wrap">
-    <section class="doors" id="join">
-      <div class="door">
-        <span data-doodle="sproutCup" class="doodle"></span>
-        <div>
-          <div class="eyebrow">for partners</div>
+    <section class="hero">
+      <div>
+        <h1>Every Cup Leaves <em>Something</em> Behind.</h1>
+        <p class="lede">We collect the used grounds from our coffee machines and pass them to gardens, schools and researchers — mostly free.</p>
+        <div class="hero-ctas">
+          <a class="btn-primary" href="customer/login.html">Request grounds <span id="heroArrow"></span></a>
+          <a class="btn-secondary" href="#how">How it works</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong>5</strong><span>Regions</span></div>
+          <div><strong>3.9k</strong><span>Cups / month</span></div>
+          <div><strong>~15g</strong><span>Grounds / cup</span></div>
+        </div>
+      </div>
+
+      <div class="bento">
+        <div class="tile wide"><span class="kicker">Every month</span><div><strong>~35 kg</strong><br><span>of used grounds across our machines</span></div></div>
+        <div class="tile caramel"><span class="kicker">Usual price</span><div><strong>$0</strong><br><span>impact before revenue</span></div></div>
+        <div class="tile sage"><span class="kicker">Each year</span><div><strong>~420 kg</strong><br><span>kept out of landfill</span></div></div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="section-head">
+        <h2>From machine to soil</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="n">01</div><h3>Brewed</h3><p>Our machines at polytechnics, hospitals and offices.</p></div>
+        <div class="step"><div class="n">02</div><h3>Collected</h3><p>Grounds are logged by region on every service round.</p></div>
+        <div class="step"><div class="n">03</div><h3>Matched</h3><p>Each week's supply goes to the clearest, most regular uses.</p></div>
+        <div class="step"><div class="n">04</div><h3>Regrown</h3><p>Compost, soil and research — with results logged back.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="join">
+      <div class="doors">
+        <div class="door">
+          <span class="kicker">For partners</span>
           <h2>I'd like grounds</h2>
-          <p>Gardens, schools and researchers can request grounds each week and track what they became.</p>
-          <div class="pills"><span>Weekly requests</span><span>Usage log</span><span>CO₂e impact</span></div>
+          <p>Request grounds each week and track what they became.</p>
           <a class="btn-primary" href="customer/login.html">Partner log in</a>
         </div>
-      </div>
-      <div class="door">
-        <span data-doodle="bag" class="doodle"></span>
-        <div>
-          <div class="eyebrow">for CoffeeBot staff</div>
+        <div class="door">
+          <span class="kicker">For CoffeeBot staff</span>
           <h2>I collect grounds</h2>
-          <p>Log collections, decide on requests, and plan each week with AI forecasts and allocations.</p>
-          <div class="pills"><span>Collections</span><span>Forecast</span><span>Green AI</span></div>
-          <a class="btn-dark" href="admin/login.html">Staff log in</a>
+          <p>Log collections, decide on requests and plan each week with AI.</p>
+          <a class="btn-secondary" href="admin/login.html">Staff log in</a>
         </div>
       </div>
     </section>
 
     <footer class="site-foot">
       <span>CoffeeBot Exchange · IS463 prototype</span>
-      <span>Demo logins are prefilled on both portals.</span>
+      <span>Demo logins are prefilled.</span>
     </footer>
   </div>
 
   <script src="assets/js/app.js"></script>
   <script>
-    ["navArrow", "heroArrow"].forEach((id) => (document.getElementById(id).innerHTML = CBUI.icon("arrow", "icon-sm")));
-    [["ic1", "cup"], ["ic2", "scale"], ["ic3", "bean"], ["ic4", "sprout"],
-     ["f1", "scale"], ["f2", "leaf"], ["f3", "cup"], ["f4", "sprout"]]
-      .forEach(([id, name]) => (document.getElementById(id).innerHTML = CBUI.icon(name)));
+    document.getElementById("heroArrow").innerHTML = CBUI.icon("arrow", "icon-sm");
   </script>
 </body>
 </html>

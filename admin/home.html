@@ -11,13 +11,11 @@
   <main class="main">
     <header class="page-head">
       <div>
-        <div class="eyebrow">operations overview</div>
         <h1 id="greeting">Welcome back</h1>
-        <p class="subtext">Requests, collections and supply across all five regions.</p>
       </div>
       <div class="head-actions">
         <a class="btn-secondary" href="operations.html">Review requests</a>
-        <a class="btn-arrow" href="upload.html"><span class="btn-primary">Log a collection</span><span class="arrow" id="icUpload"></span></a>
+        <a class="btn-primary" href="upload.html">Log a collection <span id="icUpload"></span></a>
       </div>
     </header>
 
@@ -50,12 +48,6 @@
           </div>
           <div id="regionBars"></div>
         </div>
-
-        <div class="doodle-card">
-          <span data-doodle="seedling" class="doodle"></span>
-          <div class="eyebrow">where it ends up</div>
-          <h3>Compost beds, research plots and community gardens.</h3>
-        </div>
       </aside>
     </div>
   </main>
@@ -83,7 +75,6 @@
         container: "#aiMount",
         task: "briefing",
         title: "This week's briefing",
-        description: "Gemini reads requests, collections, partners and the supply forecast, then writes up this week's key numbers and to-dos.",
         buttonLabel: "Generate briefing",
         onGenerated: () => CBUI.greenLedger("#ledgerMount"),
       });

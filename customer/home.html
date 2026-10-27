@@ -11,13 +11,11 @@
   <main class="main">
     <header class="page-head">
       <div>
-        <div class="eyebrow">welcome back</div>
         <h1 id="greeting">Hello</h1>
-        <p class="subtext">Here's where your grounds have gone, and what's waiting on CoffeeBot.</p>
       </div>
       <div class="head-actions">
         <a class="btn-secondary" href="order.html#usage">Log last week's usage</a>
-        <a class="btn-arrow" href="order.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="icUpload"></span></a>
+        <a class="btn-primary" href="order.html">Request grounds <span id="icUpload"></span></a>
       </div>
     </header>
 
@@ -28,38 +26,21 @@
     </div>
 
     <div class="layout-2-1">
-      <div class="stack">
-        <div class="card">
-          <div class="card-head">
-            <h2>Recent requests</h2>
-            <a class="subtext link" href="past-orders.html">Full history</a>
-          </div>
-          <div class="row-list" id="recentRequests"></div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Recent requests</h2>
+          <a class="subtext link" href="past-orders.html">Full history</a>
         </div>
-
-        <div class="card">
-          <div class="card-head">
-            <h2>Your collection point</h2>
-            <span class="pill region" id="regionPill"></span>
-          </div>
-          <div class="layout-1-1" style="gap:20px;">
-            <div class="doodle-card light" style="display:flex;justify-content:center;padding:18px;"><span data-doodle="mascot" class="doodle"></span></div>
-            <div>
-              <h3 id="siteName"></h3>
-              <p class="subtext" id="siteMeta" style="margin:6px 0 12px;"></p>
-              <p class="subtext" style="font-size:.82rem;">Grounds are collected when staff service the machine, so pickups follow that schedule. Bring a sealed container.</p>
-            </div>
-          </div>
-        </div>
+        <div class="row-list" id="recentRequests"></div>
       </div>
 
-      <aside class="stack">
-        <div class="doodle-card">
-          <span data-doodle="sproutCup" class="doodle"></span>
-          <div class="eyebrow">composting tip</div>
-          <h3>Treat grounds as a "green".</h3>
-          <p>Keep them to roughly a quarter of the pile and balance with dry browns like leaves or cardboard.</p>
+      <aside class="card">
+        <div class="card-head">
+          <h2>Collection point</h2>
+          <span class="pill region" id="regionPill"></span>
         </div>
+        <h3 id="siteName"></h3>
+        <p class="subtext" id="siteMeta" style="margin-top:6px;"></p>
       </aside>
     </div>
   </main>

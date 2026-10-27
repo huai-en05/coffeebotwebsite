@@ -99,10 +99,10 @@ the AI result still shows, just without a footprint.
 index.html              landing page (how it works, impact, partner/staff entry)
 customer/                login, home, order (request+usage log), dashboard, past-orders
 admin/                   login, home, upload, operations, forecast, allocation
-assets/css/style.css     shared design system (Bricolage Grotesque + Outfit + Caveat; cream, brown, caramel)
+assets/css/style.css     shared design system (Gloock + Outfit; dark chocolate, cream, caramel)
 assets/js/config.js      AI_ENDPOINT — your deployed Apps Script URL
 assets/js/data.js        region data, seed/demo state, localStorage persistence
-assets/js/app.js         top nav, icons + hand-drawn doodles, auth guard, charts, AI panel, Green AI ledger
+assets/js/app.js         top nav, icons, auth guard, charts, AI panel, Green AI ledger
 assets/js/ai.js          rule-based forecasting/allocation, Gemini calls, footprint tally
 apps-script/Code.gs      Google Apps Script: prompts, Gemini call, EcoLogits estimate
 docs/data-sources.md     exactly which figures are real (Q&A) vs. demo-invented

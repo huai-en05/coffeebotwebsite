@@ -31,45 +31,6 @@ const CBUI = (function () {
     return `<svg class="icon ${cls || ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || ""}</svg>`;
   }
 
-  /* ---------- hand-drawn line doodles (single stroke, currentColor) ---------- */
-  const DOODLES = {
-    // CoffeeBot mascot: a takeaway cup with a face, antenna and a sprout in hand
-    mascot: '<path d="M100 34V18"/><circle cx="100" cy="13" r="5"/><path d="M60 48q40-18 80 0"/><rect x="54" y="48" width="92" height="14" rx="7"/><path d="M60 62l12 110q2 10 12 10h32q10 0 12-10l12-110"/><path d="M64 98h72M68 140h64"/><circle cx="88" cy="114" r="3.5" fill="currentColor"/><circle cx="112" cy="114" r="3.5" fill="currentColor"/><path d="M90 124q10 8 20 0"/><path d="M65 110q-19 6-23 24"/><path d="M42 134v-22"/><path d="M42 120q-12-4-14-16 12 2 14 16Z"/><path d="M42 114q10-8 14-18-12 4-14 18Z"/><path d="M135 104q19-8 23-26"/><circle cx="159" cy="74" r="4"/><path d="M88 182v12h-8M112 182v12h8"/><path d="M76 30q-6-6 0-12t0-12M124 30q-6-6 0-12t0-12"/>',
-    // mug of grounds with a sprout growing out
-    sproutCup: '<path d="M44 84l12 82q2 10 12 10h52q10 0 12-10l12-82Z"/><path d="M142 102q28-2 24 24-4 22-30 20"/><path d="M48 100q22-6 46 0t46 0"/><circle cx="66" cy="114" r="2.4" fill="currentColor"/><circle cx="90" cy="124" r="2.4" fill="currentColor"/><circle cx="114" cy="112" r="2.4" fill="currentColor"/><circle cx="124" cy="132" r="2.4" fill="currentColor"/><path d="M94 98q-4-28 4-58"/><path d="M93 72q-25-4-33-28 26 0 33 28Z"/><path d="M96 56q16-20 40-20-8 26-40 20Z"/>',
-    // seedling in a soil mound, with a worm
-    seedling: '<path d="M20 160q80-50 160 0"/><path d="M100 136V80"/><path d="M100 102q-26-4-34-28 26 0 34 28Z"/><path d="M100 90q18-22 42-20-8 26-42 20Z"/><circle cx="62" cy="150" r="2.4" fill="currentColor"/><circle cx="138" cy="148" r="2.4" fill="currentColor"/><circle cx="84" cy="142" r="2.4" fill="currentColor"/><circle cx="120" cy="140" r="2.4" fill="currentColor"/><path d="M50 182q8-8 16 0t16 0t16 0"/><circle cx="102" cy="178" r="2" fill="currentColor"/>',
-    // a bag of collected grounds with a label
-    bag: '<path d="M62 64l-10 112h96l-10-112Z"/><path d="M62 64q38-16 76 0"/><path d="M80 60q2-22 20-22t20 22"/><rect x="72" y="102" width="56" height="42" rx="8"/><path d="M84 116h32M88 130h24"/><path d="M40 182h120"/>',
-    bean: '<ellipse cx="100" cy="100" rx="46" ry="68" transform="rotate(-25 100 100)"/><path d="M123 50C92 74 118 120 77 150"/>',
-  };
-
-  function doodle(name, cls) {
-    return `<svg class="${cls || "doodle"}" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOODLES[name] || ""}</svg>`;
-  }
-
-  // Big, faint background strokes.
-  function swirl() {
-    return `<svg class="swirl" viewBox="0 0 1200 600" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" aria-hidden="true"><path d="M-60 430C180 120 420 110 520 300S820 580 990 300 1180 40 1280 150"/></svg>`;
-  }
-
-  // Ragged "torn paper" edge; fill colour comes from CSS `color`.
-  function torn(cls) {
-    let d = "M0 22 L0 12";
-    for (let x = 16, i = 0; x <= 1200; x += 16, i++) d += ` L${x} ${4 + ((i * 7) % 11)}`;
-    d += " L1200 22 Z";
-    return `<svg class="torn ${cls || ""}" viewBox="0 0 1200 22" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="currentColor"/></svg>`;
-  }
-
-  // Fill any <span data-doodle="name"> placeholders on the page.
-  function fillDoodles(root) {
-    (root || document).querySelectorAll("[data-doodle]").forEach((el) => {
-      el.outerHTML = doodle(el.dataset.doodle, el.className || "doodle");
-    });
-    (root || document).querySelectorAll("[data-swirl]").forEach((el) => (el.outerHTML = swirl()));
-    (root || document).querySelectorAll("[data-torn]").forEach((el) => (el.outerHTML = torn(el.dataset.torn)));
-  }
-
   function topbar({ role, activePage }) {
     const custLinks = [
       ["home.html", "Home"],
@@ -94,10 +55,7 @@ const CBUI = (function () {
     <header class="topbar">
       <div class="topbar-inner">
         <nav class="nav-links">${linksHtml}</nav>
-        <a class="brand" href="home.html">
-          <span class="mark">${doodle("mascot", "")}</span>
-          <span class="brand-name">CoffeeBot<span>${role === "admin" ? "staff portal" : "partner portal"}</span></span>
-        </a>
+        <a class="brand" href="home.html">CoffeeBot <em>Exchange</em></a>
         <div class="nav-right">
           <span class="nav-user">${session ? esc(session.email.split("@")[0]) : ""}</span>
           <button class="btn-secondary btn-sm" onclick="CBUI.logout('${role}')">Log out</button>
@@ -258,17 +216,15 @@ const CBUI = (function () {
 
   // Mounts an AI insights card with a Generate button for one task
   // (briefing | forecast | allocation). Shows the last result on load.
-  function aiGenerator({ container, task, title, description, buttonLabel = "Generate", onGenerated }) {
+  function aiGenerator({ container, task, title, buttonLabel = "Generate", onGenerated }) {
     const el = typeof container === "string" ? document.querySelector(container) : container;
     if (!el) return;
     el.innerHTML = `
       <section class="ai-card">
-        ${doodle("mascot", "ai-doodle")}
         <div class="ai-card-head">
           <div>
-            <div class="ai-tag">ai insights, by Gemini</div>
+            <div class="kicker">AI insights · Gemini</div>
             <h2>${esc(title)}</h2>
-            <p>${esc(description)}</p>
           </div>
           <button class="btn-primary" type="button">${esc(buttonLabel)}</button>
         </div>
@@ -279,7 +235,7 @@ const CBUI = (function () {
     const last = CBAI.lastResult(task);
     body.innerHTML = last
       ? aiResultHtml(last)
-      : `<div class="ai-empty">Nothing generated yet. Click <strong>${esc(buttonLabel)}</strong> and Gemini will read the latest data and write up the key numbers, what stands out, and what to do next.</div>`;
+      : `<div class="ai-empty">Nothing generated yet.</div>`;
     if (last) btn.textContent = "Regenerate";
 
     btn.addEventListener("click", async () => {
@@ -307,8 +263,7 @@ const CBUI = (function () {
     const ratio = t.gwpG > 0 ? Math.round((savedKg * 1000) / t.gwpG) : 0;
     el.innerHTML = `
       <div class="card">
-        <div class="eyebrow">green AI ledger</div>
-        <h2>What our AI use costs the planet</h2>
+        <h2>Green AI ledger</h2>
         <div class="ledger">
           <div><div class="num">${t.count}</div><div class="lbl">AI generations</div></div>
           <div><div class="num">${fmtImpact(t.energyWh, "Wh")}</div><div class="lbl">Electricity</div></div>
@@ -316,14 +271,10 @@ const CBUI = (function () {
           <div><div class="num">${fmtImpact(t.waterMl, "mL")}</div><div class="lbl">Water consumed</div></div>
         </div>
         <p class="subtext" style="font-size:.82rem;">${t.count
-          ? `Grounds diverted so far have saved ~${savedKg.toFixed(1)} kg CO₂e — about ${ratio.toLocaleString("en-SG")}× what our AI generations emitted.`
-          : "Each generation's energy, emissions and water use will be tallied here."}
-          Estimates by <a class="link" href="https://ecologits.ai" target="_blank" rel="noopener">EcoLogits</a>.</p>
+          ? `CO₂e saved by diverted grounds is ~${ratio.toLocaleString("en-SG")}× what our AI emitted. `
+          : ""}Estimates by <a class="link" href="https://ecologits.ai" target="_blank" rel="noopener">EcoLogits</a>.</p>
       </div>`;
   }
 
-  // Pages load this script near the end of <body>, so placeholders already exist.
-  if (typeof document !== "undefined") fillDoodles();
-
-  return { icon, doodle, topbar, mount, requireAuth, login, logout, toast, regionOptions, barChart, aiGenerator, greenLedger, esc };
+  return { icon, topbar, mount, requireAuth, login, logout, toast, regionOptions, barChart, aiGenerator, greenLedger, esc };
 })();

@@ -11,9 +11,7 @@
   <main class="main">
     <header class="page-head">
       <div>
-        <div class="eyebrow">this week's allocation</div>
         <h1>Allocation</h1>
-        <p class="subtext">Pending requests ranked by quantity, consistency and clarity of use case — the factors CoffeeBot staff actually weigh.</p>
       </div>
       <div class="head-actions">
         <button class="btn-primary" id="approveAllBtn"><span id="icCheck"></span> Approve all</button>
@@ -32,7 +30,6 @@
       <div class="card">
         <div class="card-head">
           <h2>Ranked recommendation</h2>
-          <span class="subtext">Supply allocated in score order</span>
         </div>
         <div class="table-wrap">
           <table class="data-table">
@@ -125,7 +122,6 @@
         container: "#aiMount",
         task: "allocation",
         title: "Allocation review",
-        description: "Gemini checks the ranking before you approve — what's fully supplied, what's short, and what deserves a second look.",
         buttonLabel: "Generate",
       });
     }

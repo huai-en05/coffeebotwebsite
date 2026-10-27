@@ -11,12 +11,10 @@
   <main class="main">
     <header class="page-head">
       <div>
-        <div class="eyebrow">supply forecasting</div>
         <h1>Forecast</h1>
-        <p class="subtext">Expected grounds supply for the next 7 days, by region — a moving-average + trend model anchored to each site's cup volume.</p>
       </div>
       <div class="head-actions">
-        <a class="btn-arrow" href="allocation.html"><span class="btn-primary">Plan this week's allocation</span><span class="arrow" id="icArrow"></span></a>
+        <a class="btn-primary" href="allocation.html">Plan this week's allocation <span id="icArrow"></span></a>
       </div>
     </header>
 
@@ -46,7 +44,7 @@
           <div id="accuracyChart"></div>
           <div class="legend">
             <span><i style="background:var(--predicted);"></i>Predicted</span>
-            <span><i style="background:var(--brown);"></i>Actual</span>
+            <span><i style="background:var(--caramel);"></i>Actual</span>
           </div>
         </div>
       </div>
@@ -69,7 +67,7 @@
 
       const byRegion = CBAI.forecastByRegion(7);
       const days = ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"];
-      const colors = ["var(--espresso)", "var(--brown)", "var(--caramel)", "#dcb47f", "#a98b76"];
+      const colors = ["var(--cream)", "var(--caramel)", "var(--ok)", "#d9b98f", "#8a6a52"];
 
       const total7 = byRegion.reduce((sum, f) => sum + f.values.reduce((a, b) => a + b, 0), 0);
       document.getElementById("sNext7").textContent = total7.toFixed(1) + " kg";
@@ -105,7 +103,7 @@
         labels: weeks,
         series: [
           { values: predicted, color: "var(--predicted)" },
-          { values: actual, color: "var(--brown)" },
+          { values: actual, color: "var(--caramel)" },
         ],
         formatY: (v) => v + "kg",
       });
@@ -114,7 +112,6 @@
         container: "#aiMount",
         task: "forecast",
         title: "Forecast read",
-        description: "Gemini reads the regional forecast and flags trends and collection changes worth acting on.",
         buttonLabel: "Generate",
       });
     }
