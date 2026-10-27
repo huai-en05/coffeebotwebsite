@@ -42,7 +42,6 @@ const CBUI = (function () {
       ["allocation.html", "Allocation"],
     ];
     const links = role === "admin" ? adminLinks : custLinks;
-    const base = role === "admin" ? "" : "";
     const linksHtml = links
       .map(([href, label]) => `<a href="${href}" class="${activePage === href ? "active" : ""}">${label}</a>`)
       .join("");
@@ -51,13 +50,13 @@ const CBUI = (function () {
     <header class="topbar">
       <a class="brand" href="home.html">
         <span class="mark">${icon("coffee", "icon-sm")}</span>
-        CoffeeBot Exchange
+        <span class="brand-name">CoffeeBot <em>Exchange</em></span>
       </a>
+      <nav class="nav-links">${linksHtml}</nav>
       <div class="nav-right">
-        <nav class="nav-links">${linksHtml}</nav>
         <span class="role-tag">${role === "admin" ? "Admin" : "Customer"}</span>
         <button class="bell" title="Notifications">${icon("bell", "icon-sm")}</button>
-        <button class="logout-btn" onclick="CBUI.logout('${role}')">Log out</button>
+        <button class="logout-btn" onclick="CBUI.logout('${role}')">${icon("logout", "icon-sm")} Log out</button>
       </div>
     </header>`;
   }
@@ -133,8 +132,8 @@ const CBUI = (function () {
     for (let i = 0; i <= gridCount; i++) {
       const v = (maxVal / gridCount) * i;
       const y = padT + plotH - (v / maxVal) * plotH;
-      gridLines += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="var(--gridline)" stroke-width="1"/>`;
-      yLabels += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="var(--brown-text)">${formatY(Math.round(v))}</text>`;
+      gridLines += `<line x1="${padL}" x2="${w - padR}" y1="${y}" y2="${y}" stroke="var(--gridline)" stroke-width="1" stroke-dasharray="3 4"/>`;
+      yLabels += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="var(--brown-text)">${formatY(maxVal < 10 ? Math.round(v * 10) / 10 : Math.round(v))}</text>`;
     }
 
     let bars = "";
@@ -146,7 +145,7 @@ const CBUI = (function () {
         const barH = (val / maxVal) * plotH;
         const x = groupX + si * (barW + barGap);
         const y = padT + plotH - barH;
-        bars += `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(0, barH)}" rx="2.5" fill="${s.color}"></rect>`;
+        bars += `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(0, barH)}" rx="${Math.min(6, barW / 2)}" fill="${s.color}"></rect>`;
       });
       xLabels += `<text x="${groupX + (groupW - 14) / 2}" y="${h - 8}" text-anchor="middle" font-size="10.5" fill="var(--brown-text)">${label}</text>`;
     });
@@ -158,5 +157,81 @@ const CBUI = (function () {
     </svg>`;
   }
 
-  return { icon, topbar, mount, requireAuth, login, logout, toast, regionOptions, barChart };
+  /* ---------- AI generator panel (Gemini via Apps Script) ---------- */
+  function esc(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+
+  function aiResultHtml(payload) {
+    const r = payload.result || {};
+    const when = payload.generatedAt ? CB.fmtDate(new Date(payload.generatedAt).getTime()) : "";
+    const stats = (r.stats || []).map((s) => `
+      <div class="ai-stat ${esc(s.tone)}">
+        <div class="ai-stat-lbl">${esc(s.label)}</div>
+        <div class="ai-stat-num">${esc(s.value)}</div>
+        <div class="ai-stat-note">${esc(s.note)}</div>
+      </div>`).join("");
+    const list = (items) => (items || []).map((t) => `<li>${esc(t)}</li>`).join("");
+    return `
+      <p class="ai-headline">${esc(r.headline)}</p>
+      <div class="ai-stats">${stats}</div>
+      <div class="ai-columns">
+        <div><h4>${icon("sparkle", "icon-sm")} Insights</h4><ul class="ai-list">${list(r.insights)}</ul></div>
+        <div><h4>${icon("arrow", "icon-sm")} Next actions</h4><ul class="ai-list actions">${list(r.actions)}</ul></div>
+      </div>
+      <div class="ai-meta">Generated ${esc(when)} · ${esc(payload.model || "Gemini")}</div>`;
+  }
+
+  function aiErrorHtml(err) {
+    const notConfigured = err.message === "not_configured";
+    return `
+      <div class="ai-error">
+        <strong>${notConfigured ? "AI endpoint not connected yet" : "Couldn't generate insights"}</strong>
+        <p>${notConfigured
+          ? "Set <code>AI_ENDPOINT</code> in <code>assets/js/config.js</code> to your deployed Apps Script URL — see <code>docs/gemini-apps-script-setup.md</code>."
+          : esc(err.message)}</p>
+      </div>`;
+  }
+
+  // Mounts a dark "AI studio" card with a Generate button for one task
+  // (briefing | forecast | allocation). Shows the last result on load.
+  function aiGenerator({ container, task, title, description, buttonLabel = "Generate" }) {
+    const el = typeof container === "string" ? document.querySelector(container) : container;
+    if (!el) return;
+    el.innerHTML = `
+      <section class="ai-card">
+        <div class="ai-card-head">
+          <div>
+            <span class="ai-badge">${icon("sparkle", "icon-sm")} Gemini AI</span>
+            <h2>${esc(title)}</h2>
+            <p>${esc(description)}</p>
+          </div>
+          <button class="btn-generate" type="button">${icon("sparkle", "icon-sm")} <span>${esc(buttonLabel)}</span></button>
+        </div>
+        <div class="ai-body"></div>
+      </section>`;
+    const body = el.querySelector(".ai-body");
+    const btn = el.querySelector(".btn-generate");
+    const last = CBAI.lastResult(task);
+    body.innerHTML = last
+      ? aiResultHtml(last)
+      : `<div class="ai-empty">Click <strong>${esc(buttonLabel)}</strong> to have Gemini read the latest data and produce stats, insights and next actions.</div>`;
+
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.querySelector("span").textContent = "Generating…";
+      body.innerHTML = `<div class="ai-loading"><div></div><div></div><div></div><div></div></div>`;
+      try {
+        body.innerHTML = aiResultHtml(await CBAI.generate(task));
+      } catch (err) {
+        body.innerHTML = aiErrorHtml(err);
+      } finally {
+        btn.disabled = false;
+        btn.querySelector("span").textContent = "Regenerate";
+      }
+    });
+    if (last) btn.querySelector("span").textContent = "Regenerate";
+  }
+
+  return { icon, topbar, mount, requireAuth, login, logout, toast, regionOptions, barChart, aiGenerator };
 })();

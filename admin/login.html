@@ -7,34 +7,43 @@
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div class="page">
-    <a href="../index.html" class="brand" style="margin-bottom:10px;display:inline-flex;">
-      <span class="mark" id="markIcon"></span> CoffeeBot Exchange
-    </a>
-    <div class="card login-card">
-      <div class="eyebrow">CoffeeBot Staff</div>
-      <h1 style="font-size:1.5rem;">Admin Log In</h1>
-      <p class="subtext" style="margin-bottom:22px;">Manage collections, requests, forecasts, and allocation.</p>
+  <div class="auth-shell">
+    <aside class="auth-art">
+      <a href="../index.html" class="brand">
+        <span class="mark" id="markIcon"></span> <span class="brand-name">CoffeeBot <em>Exchange</em></span>
+      </a>
+      <div>
+        <h2>Every cup, <em>given a second life.</em></h2>
+        <p>Log collections, review requests and let Gemini draft this week's allocation across all five regions.</p>
+      </div>
+      <span class="bean"></span>
+    </aside>
+    <main class="auth-panel">
+      <div class="card login-card">
+        <div class="eyebrow">CoffeeBot Staff</div>
+        <h1>Admin Log In</h1>
+        <p class="subtext" style="margin-bottom:22px;">Manage collections, requests, forecasts, and allocation.</p>
 
-      <form id="loginForm">
-        <div class="field">
-          <label>Email</label>
-          <div class="input-box">
-            <span id="mailIcon"></span>
-            <input type="email" id="email" placeholder="admin@gmail.com" required value="admin@gmail.com">
+        <form id="loginForm">
+          <div class="field">
+            <label>Email</label>
+            <div class="input-box">
+              <span id="mailIcon"></span>
+              <input type="email" id="email" placeholder="admin@gmail.com" required value="admin@gmail.com">
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <div class="input-box">
-            <span id="lockIcon"></span>
-            <input type="password" id="password" placeholder="••••••••" required value="coffeebot123">
+          <div class="field">
+            <label>Password</label>
+            <div class="input-box">
+              <span id="lockIcon"></span>
+              <input type="password" id="password" placeholder="••••••••" required value="coffeebot123">
+            </div>
           </div>
-        </div>
-        <button type="submit" class="btn-primary full">Log In</button>
-      </form>
-      <p class="subtext" style="margin-top:16px;font-size:.8rem;">Demo account prefilled — just click Log In.</p>
-    </div>
+          <button type="submit" class="btn-primary full">Log In</button>
+        </form>
+        <p class="subtext" style="margin-top:16px;font-size:.8rem;">Demo account prefilled — just click Log In.</p>
+      </div>
+    </main>
   </div>
 
   <script src="../assets/js/data.js"></script>

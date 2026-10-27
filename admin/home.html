@@ -22,6 +22,8 @@
       <div class="stat-tile"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
     </div>
 
+    <div class="ai-mount" id="aiMount" style="margin-bottom:22px;"></div>
+
     <div class="grid grid-2">
       <div class="card">
         <div class="flex-between" style="margin-bottom:10px;">
@@ -44,6 +46,8 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/ai.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
@@ -60,6 +64,14 @@
       document.getElementById("statCo2").textContent = "~" + totalCo2.toFixed(1) + " kg";
       document.getElementById("statPending").textContent = state.requests.filter((r) => r.status === "pending").length;
       document.getElementById("statPartners").textContent = state.partners.length;
+
+      CBUI.aiGenerator({
+        container: "#aiMount",
+        task: "briefing",
+        title: "This week's AI briefing",
+        description: "One click and Gemini reads requests, collections, partners and the supply forecast, then generates this week's key stats and to-dos.",
+        buttonLabel: "Generate briefing",
+      });
 
       const latest = [...state.requests].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
       document.getElementById("latestRequests").innerHTML = latest.map((r) => `
