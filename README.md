@@ -41,49 +41,69 @@ uses those five regions rather than a finer "North, North-East, ..." split.
 
 ## AI features
 
-Built as two layers, both live on the **Forecast** and **Allocation**
-admin pages:
+AI is built into the admin side, not an optional add-on. Two layers run
+together:
 
-1. **Rule-based engine (always on, free, no key needed)** — `assets/js/ai.js`
+1. **Rule-based engine** (`assets/js/ai.js`) produces the numbers:
    - *Forecasting*: a 7-day-ahead projection per region, blending a
      7-day moving average with a least-squares linear trend over recent
      collection history, scaled by each region's known cup-volume baseline.
    - *Allocation recommendation*: scores each pending request on the
-     factors CoffeeBot staff said they actually weigh — quantity
-     requested, consistency/frequency (recurring > one-off), and clarity
-     of the stated use case — then allocates forecasted supply to the
-     highest-scoring requests first.
-2. **Optional Gemini enhancement** — on either page, an admin can paste a
-   Gemini API key (Google AI Studio, free tier under an edu account) to
-   turn the numbers above into a short, plain-language note. The key is
-   stored only in that browser's `localStorage`; it's never committed to
-   this repo and never sent anywhere but Google's API. Without a key, the
-   pages fall back to a rule-based written summary — nothing breaks.
+     factors CoffeeBot staff said they actually weigh (quantity
+     requested, consistency/frequency, clarity of use case), then
+     allocates forecasted supply to the highest-scoring requests first.
+2. **Gemini via Google Apps Script** (`apps-script/Code.gs`) turns those
+   numbers into generated stats, insights and next actions. Each of these
+   admin pages has a **Generate** button:
+   - **Home** → this week's operations briefing
+   - **Forecast** → forecast insights by region
+   - **Allocation** → a review of the ranked allocation before approval
 
-**Why not the Claude API:** Claude Pro (a chat subscription) doesn't
-include API access — that's billed separately, pay-as-you-go, via
-console.anthropic.com. Gemini's free tier was the zero-cost option
-available, so that's what's wired up; swapping in Claude (or any other
-provider) later just means adding a second `callX()` function next to
-`callGemini()` in `assets/js/ai.js`.
+The Gemini API key is stored in Apps Script's Script Properties, so it's
+never in the browser or this repo. The site only knows the Apps Script
+URL, set in `assets/js/config.js`.
+
+### Measuring the AI's own footprint (EcoLogits)
+
+Because this is a sustainability project, every AI generation reports its
+own environmental cost. After each Gemini call, Apps Script sends the
+model name, output-token count and response time to the free
+[EcoLogits](https://ecologits.ai) API, an open-source, life-cycle-based
+estimator. It returns ranges for electricity (Wh), emissions (g CO₂e) and
+water (mL). The site shows:
+
+- a footprint line under every generated result, and
+- a **Green AI ledger** on the admin Overview that totals all generations
+  and compares them with the CO₂e the programme has saved.
+
+EcoLogits uses a world-average electricity mix, since Google doesn't
+publish which data centre served a request. If EcoLogits is unreachable,
+the AI result still shows, just without a footprint.
+
+**Setup:** follow **[docs/gemini-apps-script-setup.md](docs/gemini-apps-script-setup.md)**
+(about 10 minutes: get a key, paste the script, deploy, paste the URL).
 
 ## Project structure
 
 ```
-index.html              role-select landing page
+index.html              landing page (how it works, impact, partner/staff entry)
 customer/                login, home, order (request+usage log), dashboard, past-orders
 admin/                   login, home, upload, operations, forecast, allocation
-assets/css/style.css     shared brown coffee-theme design system
+assets/css/style.css     shared design system (Bricolage Grotesque + Outfit + Caveat; cream, brown, caramel)
+assets/js/config.js      AI_ENDPOINT — your deployed Apps Script URL
 assets/js/data.js        region data, seed/demo state, localStorage persistence
-assets/js/app.js         nav bar, icons, auth guard, bar-chart renderer
-assets/js/ai.js          rule-based forecasting/allocation + optional Gemini layer
+assets/js/app.js         top nav, icons + hand-drawn doodles, auth guard, charts, AI panel, Green AI ledger
+assets/js/ai.js          rule-based forecasting/allocation, Gemini calls, footprint tally
+apps-script/Code.gs      Google Apps Script: prompts, Gemini call, EcoLogits estimate
 docs/data-sources.md     exactly which figures are real (Q&A) vs. demo-invented
+docs/gemini-apps-script-setup.md   step-by-step Gemini / Apps Script setup
 ```
 
 ## Status
 
 This is a functioning prototype for a client check-in/demo, not a
 production deployment — there is no real authentication, no server, and
-no persistence beyond the current browser. It's designed so each piece
+no persistence beyond the current browser. The only server piece is the
+Apps Script endpoint used for Gemini. It's designed so each piece
 (auth, data storage, AI calls) is isolated enough to swap in a real
 backend later without rewriting the UI.

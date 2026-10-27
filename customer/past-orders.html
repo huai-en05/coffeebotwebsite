@@ -7,35 +7,53 @@
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page">
-    <div class="page-head">
-      <div class="eyebrow">History</div>
-      <h1>Past Orders</h1>
-      <p class="subtext">Your request &amp; order status history — accepted, declined, and pending, with dates and times.</p>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">history</div>
+        <h1>Past orders</h1>
+        <p class="subtext">Every request you've made — accepted, declined and pending.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn-primary" href="order.html">New request</a>
+      </div>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><div class="num" id="sCount">—</div><div class="lbl">Requests made</div></div>
+      <div class="kpi"><div class="num green" id="sAccepted">—</div><div class="lbl">Accepted</div></div>
+      <div class="kpi"><div class="num amber" id="sPending">—</div><div class="lbl">Pending</div></div>
+      <div class="kpi"><div class="num" id="sKg">—</div><div class="lbl">Total kg requested</div></div>
     </div>
 
     <div class="card">
-      <table class="data-table">
-        <thead>
-          <tr><th>Ticket</th><th>Use case</th><th>Region</th><th>Volume</th><th>Frequency</th><th>Date &amp; time</th><th>Status</th></tr>
-        </thead>
-        <tbody id="ordersBody"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Ticket</th><th>Use case</th><th>Region</th><th class="num">Volume</th><th>Frequency</th><th>Date &amp; time</th><th>Status</th></tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
       <div id="emptyNote" class="empty-note" style="display:none;">No past orders yet.</div>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "past-orders.html" }));
+      CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "past-orders.html" }));
       const MY_NAME = "Simei RC Community Garden";
       const state = CB.getState();
       const mine = state.requests.filter((r) => r.customer === MY_NAME).sort((a, b) => b.createdAt - a.createdAt);
+
+      document.getElementById("sCount").textContent = mine.length;
+      document.getElementById("sAccepted").textContent = mine.filter((r) => r.status === "accepted").length;
+      document.getElementById("sPending").textContent = mine.filter((r) => r.status === "pending").length;
+      document.getElementById("sKg").textContent = mine.reduce((a, r) => a + r.volumeKg, 0).toFixed(1) + " kg";
 
       const body = document.getElementById("ordersBody");
       if (!mine.length) {

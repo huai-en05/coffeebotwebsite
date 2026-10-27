@@ -7,50 +7,71 @@
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page">
-    <div class="page-head">
-      <div class="eyebrow">Welcome back</div>
-      <h1 id="greeting">Hello!</h1>
-      <p class="subtext">Here's a quick look at your activity with CoffeeBot.</p>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">welcome back</div>
+        <h1 id="greeting">Hello</h1>
+        <p class="subtext">Here's where your grounds have gone, and what's waiting on CoffeeBot.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn-secondary" href="order.html#usage">Log last week's usage</a>
+        <a class="btn-arrow" href="order.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="icUpload"></span></a>
+      </div>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><div class="num" id="statTotalKg">—</div><div class="lbl">Grounds received to date</div></div>
+      <div class="kpi"><div class="num green" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
+      <div class="kpi"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
     </div>
 
-    <div class="grid grid-3" style="margin-bottom:22px;">
-      <div class="stat-tile"><div class="num" id="statTotalKg">—</div><div class="lbl">Grounds received to date</div></div>
-      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
-      <div class="stat-tile amber"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
-    </div>
-
-    <div class="grid grid-2">
-      <div class="card">
-        <div class="flex-between" style="margin-bottom:10px;">
-          <h2>Quick actions</h2>
+    <div class="layout-2-1">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head">
+            <h2>Recent requests</h2>
+            <a class="subtext link" href="past-orders.html">Full history</a>
+          </div>
+          <div class="row-list" id="recentRequests"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a class="btn-primary full" href="order.html"><span id="icUpload"></span> Submit this week's request</a>
-          <a class="btn-secondary full" href="order.html#usage"><span id="icLeaf"></span> Log last week's usage</a>
-          <a class="btn-secondary full" href="dashboard.html"><span id="icDash"></span> View impact dashboard</a>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Your collection point</h2>
+            <span class="pill region" id="regionPill"></span>
+          </div>
+          <div class="layout-1-1" style="gap:20px;">
+            <div class="doodle-card light" style="display:flex;justify-content:center;padding:18px;"><span data-doodle="mascot" class="doodle"></span></div>
+            <div>
+              <h3 id="siteName"></h3>
+              <p class="subtext" id="siteMeta" style="margin:6px 0 12px;"></p>
+              <p class="subtext" style="font-size:.82rem;">Grounds are collected when staff service the machine, so pickups follow that schedule. Bring a sealed container.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Recent requests</h2>
-        <div class="row-list" id="recentRequests"></div>
-      </div>
+      <aside class="stack">
+        <div class="doodle-card">
+          <span data-doodle="sproutCup" class="doodle"></span>
+          <div class="eyebrow">composting tip</div>
+          <h3>Treat grounds as a "green".</h3>
+          <p>Keep them to roughly a quarter of the pile and balance with dry browns like leaves or cardboard.</p>
+        </div>
+      </aside>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "home.html" }));
-      document.getElementById("greeting").textContent = "Hello, " + session.email.split("@")[0] + "!";
-      document.getElementById("icUpload").innerHTML = CBUI.icon("upload", "icon-sm");
-      document.getElementById("icLeaf").innerHTML = CBUI.icon("leaf", "icon-sm");
-      document.getElementById("icDash").innerHTML = CBUI.icon("dashboard", "icon-sm");
+      CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "home.html" }));
+      document.getElementById("greeting").textContent = "Hello, " + session.email.split("@")[0];
+      document.getElementById("icUpload").innerHTML = CBUI.icon("arrow", "icon-sm");
 
       const state = CB.getState();
       const myName = "Simei RC Community Garden"; // demo identity for this logged-in off-taker
@@ -60,6 +81,12 @@
       document.getElementById("statTotalKg").textContent = (myPartner ? myPartner.kgReceived : 0).toFixed(1) + " kg";
       document.getElementById("statCo2").textContent = "~" + (myPartner ? myPartner.co2eKg : 0).toFixed(1) + " kg";
       document.getElementById("statPending").textContent = mine.filter((r) => r.status === "pending").length;
+
+      const region = CB.regionById(myPartner ? myPartner.region : "east");
+      document.getElementById("regionPill").textContent = region.name;
+      document.getElementById("siteName").textContent = region.location;
+      document.getElementById("siteMeta").textContent =
+        `~${region.cupsPerMonth.toLocaleString("en-SG")} cups a month · about ${CB.monthlyGroundsKg(region).toFixed(1)} kg of grounds`;
 
       const list = document.getElementById("recentRequests");
       if (mine.length === 0) {

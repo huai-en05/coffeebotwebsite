@@ -3,56 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Operations Dashboard — CoffeeBot Admin</title>
+<title>Operations — CoffeeBot Admin</title>
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page">
-    <div class="page-head-row">
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
       <div>
-        <div class="eyebrow">Operations</div>
-        <h1>Operations Dashboard</h1>
-        <p class="subtext">Pending requests awaiting a decision, plus reuse &amp; impact analytics.</p>
+        <div class="eyebrow">operations</div>
+        <h1>Requests &amp; impact</h1>
+        <p class="subtext">Decide on pending requests, and track reuse and impact across every region and partner.</p>
       </div>
-      <button class="btn-secondary" id="approveAllBtn"><span id="icCheck"></span> Approve all pending</button>
-    </div>
+      <div class="head-actions">
+        <button class="btn-secondary" id="approveAllBtn"><span id="icCheck"></span> Accept all pending</button>
+      </div>
+    </header>
 
     <div id="feedbackBar" style="display:none;"></div>
 
-    <div class="card">
-      <h2>Pending &amp; recent requests</h2>
-      <div class="row-list" id="requestsList"></div>
+    <div class="kpis">
+      <div class="kpi"><div class="num green" id="aCo2">—</div><div class="lbl">Cumulative CO₂e saved</div></div>
+      <div class="kpi"><div class="num" id="aTopSegment">—</div><div class="lbl">Top region by volume</div></div>
+      <div class="kpi"><div class="num amber" id="aSoil">—</div><div class="lbl">Avg. soil improvement rating</div></div>
+      <div class="kpi"><div class="num" id="aAccuracy">—</div><div class="lbl">Forecast accuracy (6-wk avg)</div></div>
     </div>
 
-    <div class="card">
-      <div class="flex-between" style="margin-bottom:4px;">
-        <h2>Reuse &amp; Impact Analytics</h2>
+    <div class="layout-2-1">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head">
+            <h2>Pending &amp; recent requests</h2>
+          </div>
+          <div class="row-list" id="requestsList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Waste diverted by day</h2>
+            <span class="subtext">Last 7 days, kg</span>
+          </div>
+          <div id="wasteChart"></div>
+        </div>
       </div>
-      <p class="subtext" style="margin-bottom:16px;">Cumulative outcomes across all regions and partners.</p>
 
-      <div class="grid grid-4" style="margin-bottom:22px;">
-        <div class="stat-tile green"><div class="num green" id="aCo2">—</div><div class="lbl">Cumulative CO2e saved</div></div>
-        <div class="stat-tile"><div class="num" id="aTopSegment">—</div><div class="lbl">Top region by volume</div></div>
-        <div class="stat-tile amber"><div class="num amber" id="aSoil">—</div><div class="lbl">Avg. soil improvement rating</div></div>
-        <div class="stat-tile"><div class="num" id="aAccuracy">—</div><div class="lbl">Forecast accuracy (6wk avg)</div></div>
-      </div>
+      <aside class="stack">
+        <div class="card">
+          <div class="card-head">
+            <h2>Volume by region</h2>
+          </div>
+          <div id="segmentBars"></div>
+        </div>
 
-      <h3 style="margin-bottom:8px;">Waste Diverted by Day (kg)</h3>
-      <div id="wasteChart" style="margin-bottom:24px;"></div>
-
-      <h3 style="margin-bottom:10px;">Volume by Region</h3>
-      <div id="segmentBars"></div>
+        <div class="doodle-card">
+          <span data-doodle="sproutCup" class="doodle"></span>
+          <div class="eyebrow">why it matters</div>
+          <h3>Grounds sent to landfill release methane as they break down.</h3>
+          <p>Every kilogram redirected to compost or research is a kilogram kept out of the bin.</p>
+        </div>
+      </aside>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "operations.html" }));
+      CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "operations.html" }));
       document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
 
       function showFeedback(msg) {
@@ -75,8 +93,8 @@
             </div>
             <div class="row-actions">
               ${r.status === "pending" ? `
-                <button class="btn-secondary" style="padding:8px 14px;" data-decline="${r.id}">Decline</button>
-                <button class="btn-primary" style="padding:8px 14px;" data-accept="${r.id}">Accept</button>
+                <button class="btn-secondary btn-sm" data-decline="${r.id}">Decline</button>
+                <button class="btn-primary btn-sm" data-accept="${r.id}">Accept</button>
               ` : `<span class="pill ${r.status}">${r.status}</span>`}
             </div>
           </div>`).join("");
@@ -130,7 +148,7 @@
       CBUI.barChart({
         container: "#wasteChart",
         labels: hist.map((h) => new Date(h.date).toLocaleDateString("en-SG", { weekday: "short" })),
-        series: [{ values: hist.map((h) => h.kg), color: "var(--brown)" }],
+        series: [{ values: hist.map((h) => h.kg), color: "var(--caramel)" }],
         formatY: (v) => v + "kg",
       });
 
@@ -140,14 +158,9 @@
         const v = byRegionVol[r.id] || 0;
         const pct = Math.round((v / totalVol) * 100);
         return `
-          <div style="margin-bottom:14px;">
-            <div class="flex-between" style="margin-bottom:5px;">
-              <span style="font-size:.85rem;font-weight:600;">${r.name} <span class="subtext" style="font-size:.78rem;">(${r.location})</span></span>
-              <span style="font-size:.85rem;font-weight:700;">${v.toFixed(1)} kg · ${pct}%</span>
-            </div>
-            <div style="background:var(--gridline);border-radius:6px;height:10px;overflow:hidden;">
-              <div style="background:var(--brown);height:100%;width:${pct}%;border-radius:6px;"></div>
-            </div>
+          <div class="bar-row">
+            <div class="flex-between"><span>${r.name} <span class="subtext" style="font-size:.78rem;">${r.location}</span></span><strong>${v.toFixed(1)} kg · ${pct}%</strong></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
           </div>`;
       }).join("");
     }

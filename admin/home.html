@@ -3,55 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Home — CoffeeBot Admin</title>
+<title>Overview — CoffeeBot Admin</title>
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page">
-    <div class="page-head">
-      <div class="eyebrow">Operations overview</div>
-      <h1 id="greeting">Welcome back!</h1>
-      <p class="subtext">Latest requests, collections, and quick links across all 5 regions.</p>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">operations overview</div>
+        <h1 id="greeting">Welcome back</h1>
+        <p class="subtext">Requests, collections and supply across all five regions.</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn-secondary" href="operations.html">Review requests</a>
+        <a class="btn-arrow" href="upload.html"><span class="btn-primary">Log a collection</span><span class="arrow" id="icUpload"></span></a>
+      </div>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><div class="num" id="statKg">—</div><div class="lbl">Grounds diverted to date</div></div>
+      <div class="kpi"><div class="num green" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
+      <div class="kpi"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
+      <div class="kpi"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
     </div>
 
-    <div class="grid grid-4" style="margin-bottom:22px;">
-      <div class="stat-tile"><div class="num" id="statKg">—</div><div class="lbl">Grounds diverted to date</div></div>
-      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
-      <div class="stat-tile amber"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
-      <div class="stat-tile"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
-    </div>
+    <div class="layout-2-1">
+      <div class="stack">
+        <div id="aiMount"></div>
 
-    <div class="grid grid-2">
-      <div class="card">
-        <div class="flex-between" style="margin-bottom:10px;">
-          <h2>Quick actions</h2>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a class="btn-primary full" href="upload.html"><span id="icUpload"></span> Upload today's collection</a>
-          <a class="btn-secondary full" href="operations.html"><span id="icOps"></span> Review pending requests</a>
-          <a class="btn-secondary full" href="forecast.html"><span id="icTrend"></span> View supply forecast</a>
+        <div class="card">
+          <div class="card-head">
+            <h2>Latest customer requests</h2>
+            <a class="subtext link" href="operations.html">View all</a>
+          </div>
+          <div class="row-list" id="latestRequests"></div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Latest customer requests</h2>
-        <div class="row-list" id="latestRequests"></div>
-      </div>
+      <aside class="stack">
+        <div id="ledgerMount"></div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Collections this week</h2>
+          </div>
+          <div id="regionBars"></div>
+        </div>
+
+        <div class="doodle-card">
+          <span data-doodle="seedling" class="doodle"></span>
+          <div class="eyebrow">where it ends up</div>
+          <h3>Compost beds, research plots and community gardens.</h3>
+        </div>
+      </aside>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/ai.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "home.html" }));
-      document.getElementById("greeting").textContent = "Welcome back, " + session.email.split("@")[0] + "!";
-      document.getElementById("icUpload").innerHTML = CBUI.icon("upload", "icon-sm");
-      document.getElementById("icOps").innerHTML = CBUI.icon("dashboard", "icon-sm");
-      document.getElementById("icTrend").innerHTML = CBUI.icon("trend", "icon-sm");
+      CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "home.html" }));
+      document.getElementById("greeting").textContent = "Welcome back, " + session.email.split("@")[0];
+      document.getElementById("icUpload").innerHTML = CBUI.icon("arrow", "icon-sm");
 
       const state = CB.getState();
       const totalKg = state.partners.reduce((a, p) => a + p.kgReceived, 0);
@@ -60,6 +78,16 @@
       document.getElementById("statCo2").textContent = "~" + totalCo2.toFixed(1) + " kg";
       document.getElementById("statPending").textContent = state.requests.filter((r) => r.status === "pending").length;
       document.getElementById("statPartners").textContent = state.partners.length;
+
+      CBUI.aiGenerator({
+        container: "#aiMount",
+        task: "briefing",
+        title: "This week's briefing",
+        description: "Gemini reads requests, collections, partners and the supply forecast, then writes up this week's key numbers and to-dos.",
+        buttonLabel: "Generate briefing",
+        onGenerated: () => CBUI.greenLedger("#ledgerMount"),
+      });
+      CBUI.greenLedger("#ledgerMount");
 
       const latest = [...state.requests].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
       document.getElementById("latestRequests").innerHTML = latest.map((r) => `
@@ -71,6 +99,20 @@
           </div>
           <span class="pill ${r.status}">${r.status}</span>
         </div>`).join("");
+
+      // kg collected per region over the last 7 days
+      const weekAgo = Date.now() - 7 * 86400000;
+      const byRegion = {};
+      state.collections.filter((c) => c.collectedAt >= weekAgo).forEach((c) => { byRegion[c.region] = (byRegion[c.region] || 0) + c.kg; });
+      const maxKg = Math.max(...Object.values(byRegion), 1);
+      document.getElementById("regionBars").innerHTML = CB.REGIONS.map((r) => {
+        const kg = byRegion[r.id] || 0;
+        return `
+          <div class="bar-row">
+            <div class="flex-between"><span>${r.name} <span class="subtext" style="font-size:.78rem;">${r.location}</span></span><strong>${kg.toFixed(1)} kg</strong></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((kg / maxKg) * 100)}%;"></div></div>
+          </div>`;
+      }).join("");
     }
   </script>
 </body>

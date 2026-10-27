@@ -6,47 +6,165 @@
 <title>CoffeeBot Exchange</title>
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
-  .landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;text-align:center;}
-  .landing .mark-lg{width:64px;height:64px;border-radius:50%;background:var(--brown);display:flex;align-items:center;justify-content:center;margin-bottom:18px;}
-  .landing .mark-lg svg{width:32px;height:32px;color:#fff;}
-  .role-cards{display:flex;gap:20px;margin-top:30px;flex-wrap:wrap;justify-content:center;}
-  .role-card{
-    width:260px;background:var(--white);border:1px solid var(--divider);border-radius:var(--radius-lg);
-    padding:28px 24px;box-shadow:var(--shadow-sm);transition:box-shadow .15s, transform .15s;
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px;}
+  .site-nav .nav-right{gap:22px;}
+  .site-nav .nav-right > a:not(.btn-arrow){font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--brown);}
+
+  .hero{padding:56px 0 40px;text-align:center;}
+  .hero h1{font-size:clamp(3rem,7.5vw,6.4rem);font-weight:800;line-height:.92;letter-spacing:-.035em;max-width:980px;margin:0 auto;}
+  .hero h1 em{font-style:normal;color:var(--caramel);}
+  .hero .hand-line{font-family:var(--font-hand);font-size:1.7rem;font-weight:700;color:var(--brown);margin:14px 0 0;}
+  .hero-grid{display:grid;grid-template-columns:1fr 300px 1fr;gap:32px;align-items:center;margin-top:30px;text-align:left;}
+  .hero-grid .mascot{width:300px;height:300px;color:var(--brown);}
+  .feature{display:flex;gap:14px;margin:22px 0;}
+  .feature .ic{width:38px;height:38px;flex:0 0 auto;color:var(--caramel);}
+  .feature .ic .icon{width:38px;height:38px;stroke-width:1.3;}
+  .feature h3{font-size:1.4rem;}
+  .feature p{margin:4px 0 0;font-size:.92rem;color:var(--muted);max-width:250px;}
+  .hero-ctas{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:24px;flex-wrap:wrap;}
+
+  .band{background:var(--espresso);color:var(--cream);padding:56px 0 60px;}
+  .band h2{color:var(--cream);font-size:clamp(2.4rem,5vw,4.2rem);font-weight:800;line-height:.95;letter-spacing:-.03em;text-align:center;}
+  .band .hand-line{font-family:var(--font-hand);font-size:1.5rem;color:var(--caramel);text-align:center;margin:10px 0 36px;}
+  .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;}
+  .facts .ic{color:var(--caramel);display:flex;justify-content:center;margin-bottom:10px;}
+  .facts .ic .icon{width:28px;height:28px;stroke-width:1.4;}
+  .facts strong{display:block;font-family:var(--font-display);font-stretch:80%;font-weight:700;font-size:2.6rem;line-height:1;color:var(--cream);}
+  .facts span{display:block;font-size:.88rem;color:rgba(251,245,232,.72);margin-top:8px;max-width:220px;margin-left:auto;margin-right:auto;}
+  .band .torn-top{margin-top:-1px;}
+
+  .doors{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:60px 0;}
+  .door{border:1.5px solid var(--espresso);border-radius:28px;padding:30px 30px 28px;display:grid;grid-template-columns:150px 1fr;gap:24px;align-items:center;background:var(--paper);}
+  .door .doodle{width:150px;height:150px;color:var(--brown);}
+  .door p{color:var(--muted);font-size:.93rem;margin:8px 0 16px;}
+  .door .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
+  .door .pills span{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:4px 11px;color:var(--brown);}
+  .door h2{font-size:2rem;}
+
+  .site-foot{border-top:1px solid var(--line);padding:22px 0 36px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);}
+
+  @media(max-width:960px){
+    .hero-grid{grid-template-columns:1fr;justify-items:center;}
+    .hero-grid .mascot{order:-1;width:220px;height:220px;}
+    .hero-grid > div{width:100%;max-width:420px;}
+    .facts{grid-template-columns:1fr 1fr;}
+    .doors{grid-template-columns:1fr;}
   }
-  .role-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
-  .role-card .ic{width:44px;height:44px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-  .role-card h3{font-size:1.05rem;}
-  .role-card p{color:var(--brown-text);font-size:.85rem;margin:6px 0 18px;}
+  @media(max-width:560px){
+    .wrap{padding:0 16px;}
+    .site-nav .nav-right > a:not(.btn-arrow){display:none;}
+    .door{grid-template-columns:1fr;}
+    .door .doodle{width:120px;height:120px;}
+  }
 </style>
 </head>
 <body>
-  <div class="landing">
-    <div class="mark-lg" id="markIcon"></div>
-    <div class="eyebrow">Coffee grounds, redistributed</div>
-    <h1>CoffeeBot Exchange</h1>
-    <p class="subtext" style="max-width:420px;">Connecting CoffeeBot's used coffee grounds with organisations that can put them to good use — composting, research, and more.</p>
-    <div class="role-cards">
-      <div class="role-card">
-        <div class="ic" id="custIcon"></div>
-        <h3>I'm an off-taker</h3>
-        <p>Submit requests for grounds, log your usage, and track your impact.</p>
-        <a class="btn-primary full" href="customer/login.html">Continue as Customer</a>
-      </div>
-      <div class="role-card">
-        <div class="ic" id="adminIcon"></div>
-        <h3>I'm CoffeeBot staff</h3>
-        <p>Manage collections, review requests, and view supply forecasts.</p>
-        <a class="btn-primary full" href="admin/login.html">Continue as Admin</a>
+  <header class="topbar site-nav">
+    <div class="topbar-inner">
+      <nav class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#impact">Impact</a>
+        <a href="#join">Join us</a>
+      </nav>
+      <a class="brand" href="index.html">
+        <span class="mark"><span data-doodle="mascot" class=""></span></span>
+        <span class="brand-name">CoffeeBot<span>exchange</span></span>
+      </a>
+      <div class="nav-right">
+        <a href="admin/login.html">Staff log in</a>
+        <a class="btn-arrow" href="customer/login.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="navArrow"></span></a>
       </div>
     </div>
+  </header>
+
+  <section class="hero swirl-bg" id="how">
+    <span data-swirl></span>
+    <div class="wrap">
+      <h1>Every Cup Leaves <em>Something</em> Behind</h1>
+      <p class="hand-line">~ we put it back in the ground ~</p>
+
+      <div class="hero-grid">
+        <div>
+          <div class="feature">
+            <div class="ic" id="ic1"></div>
+            <div><h3>Brewed</h3><p>Our machines at polytechnics, hospitals and offices pour ~3,900 cups a month.</p></div>
+          </div>
+          <div class="feature">
+            <div class="ic" id="ic2"></div>
+            <div><h3>Collected</h3><p>Staff empty the grounds bin on every service round and log it by region.</p></div>
+          </div>
+        </div>
+        <span data-doodle="mascot" class="mascot"></span>
+        <div>
+          <div class="feature">
+            <div class="ic" id="ic3"></div>
+            <div><h3>Matched</h3><p>Each week's supply goes to the partners with the most consistent, clearest use.</p></div>
+          </div>
+          <div class="feature">
+            <div class="ic" id="ic4"></div>
+            <div><h3>Regrown</h3><p>Grounds become compost, soil and student research — and partners log the results.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-ctas">
+        <a class="btn-arrow" href="customer/login.html"><span class="btn-primary">Request grounds</span><span class="arrow" id="heroArrow"></span></a>
+        <a class="btn-secondary" href="admin/login.html">I'm CoffeeBot staff</a>
+      </div>
+    </div>
+  </section>
+
+  <span data-torn=""></span>
+  <section class="band" id="impact">
+    <div class="wrap">
+      <h2>Small Grams, Adding Up</h2>
+      <p class="hand-line">based on CoffeeBot's own numbers</p>
+      <div class="facts">
+        <div><div class="ic" id="f1"></div><strong>~35 kg</strong><span>of grounds every month across our five regions</span></div>
+        <div><div class="ic" id="f2"></div><strong>~420 kg</strong><span>a year that can stay out of landfill</span></div>
+        <div><div class="ic" id="f3"></div><strong>~15 g</strong><span>left behind by every coffee-based cup</span></div>
+        <div><div class="ic" id="f4"></div><strong>$0</strong><span>the usual price — impact comes before revenue</span></div>
+      </div>
+    </div>
+  </section>
+  <span data-torn="flip"></span>
+
+  <div class="wrap">
+    <section class="doors" id="join">
+      <div class="door">
+        <span data-doodle="sproutCup" class="doodle"></span>
+        <div>
+          <div class="eyebrow">for partners</div>
+          <h2>I'd like grounds</h2>
+          <p>Gardens, schools and researchers can request grounds each week and track what they became.</p>
+          <div class="pills"><span>Weekly requests</span><span>Usage log</span><span>CO₂e impact</span></div>
+          <a class="btn-primary" href="customer/login.html">Partner log in</a>
+        </div>
+      </div>
+      <div class="door">
+        <span data-doodle="bag" class="doodle"></span>
+        <div>
+          <div class="eyebrow">for CoffeeBot staff</div>
+          <h2>I collect grounds</h2>
+          <p>Log collections, decide on requests, and plan each week with AI forecasts and allocations.</p>
+          <div class="pills"><span>Collections</span><span>Forecast</span><span>Green AI</span></div>
+          <a class="btn-dark" href="admin/login.html">Staff log in</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      <span>CoffeeBot Exchange · IS463 prototype</span>
+      <span>Demo logins are prefilled on both portals.</span>
+    </footer>
   </div>
 
   <script src="assets/js/app.js"></script>
   <script>
-    document.getElementById("markIcon").innerHTML = CBUI.icon("coffee").replace('class="icon"','class="icon" style="width:32px;height:32px;color:#fff;"');
-    document.getElementById("custIcon").innerHTML = CBUI.icon("user").replace('class="icon"','class="icon" style="width:22px;height:22px;color:var(--brown-strong);"');
-    document.getElementById("adminIcon").innerHTML = CBUI.icon("dashboard").replace('class="icon"','class="icon" style="width:22px;height:22px;color:var(--brown-strong);"');
+    ["navArrow", "heroArrow"].forEach((id) => (document.getElementById(id).innerHTML = CBUI.icon("arrow", "icon-sm")));
+    [["ic1", "cup"], ["ic2", "scale"], ["ic3", "bean"], ["ic4", "sprout"],
+     ["f1", "scale"], ["f2", "leaf"], ["f3", "cup"], ["f4", "sprout"]]
+      .forEach(([id, name]) => (document.getElementById(id).innerHTML = CBUI.icon(name)));
   </script>
 </body>
 </html>

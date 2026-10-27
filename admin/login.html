@@ -3,44 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin Log In — CoffeeBot Exchange</title>
+<title>Staff Log In — CoffeeBot Exchange</title>
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div class="page">
-    <a href="../index.html" class="brand" style="margin-bottom:10px;display:inline-flex;">
-      <span class="mark" id="markIcon"></span> CoffeeBot Exchange
-    </a>
-    <div class="card login-card">
-      <div class="eyebrow">CoffeeBot Staff</div>
-      <h1 style="font-size:1.5rem;">Admin Log In</h1>
-      <p class="subtext" style="margin-bottom:22px;">Manage collections, requests, forecasts, and allocation.</p>
+  <div class="auth-shell">
+    <aside class="auth-art">
+      <span data-swirl></span>
+      <a href="../index.html" class="brand">
+        <span class="brand-name">CoffeeBot<span>staff portal</span></span>
+      </a>
+      <span data-doodle="mascot" class="doodle"></span>
+      <p class="tagline">every cup,<br><span>given a second life.</span></p>
+    </aside>
+    <main class="auth-panel">
+      <div class="login-card">
+        <div class="eyebrow">hello again</div>
+        <h1>Staff log in</h1>
+        <p class="subtext" style="margin-bottom:28px;">Collections, requests, forecasts and allocation.</p>
 
-      <form id="loginForm">
-        <div class="field">
-          <label>Email</label>
-          <div class="input-box">
-            <span id="mailIcon"></span>
-            <input type="email" id="email" placeholder="admin@gmail.com" required value="admin@gmail.com">
+        <form id="loginForm">
+          <div class="field">
+            <label for="email">Email</label>
+            <div class="input-box">
+              <span id="mailIcon"></span>
+              <input type="email" id="email" placeholder="admin@gmail.com" required value="admin@gmail.com">
+            </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <div class="input-box">
-            <span id="lockIcon"></span>
-            <input type="password" id="password" placeholder="••••••••" required value="coffeebot123">
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="input-box">
+              <span id="lockIcon"></span>
+              <input type="password" id="password" placeholder="••••••••" required value="coffeebot123">
+            </div>
           </div>
-        </div>
-        <button type="submit" class="btn-primary full">Log In</button>
-      </form>
-      <p class="subtext" style="margin-top:16px;font-size:.8rem;">Demo account prefilled — just click Log In.</p>
-    </div>
+          <button type="submit" class="btn-primary full" style="margin-top:6px;">Log in</button>
+        </form>
+        <p class="subtext" style="margin-top:18px;font-size:.84rem;">Demo account prefilled — just click Log in. Off-taker partner? <a class="link" href="../customer/login.html">Partner log in</a></p>
+      </div>
+    </main>
   </div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
-    document.getElementById("markIcon").innerHTML = CBUI.icon("coffee","icon-sm");
     document.getElementById("mailIcon").innerHTML = CBUI.icon("mail","icon-sm");
     document.getElementById("lockIcon").innerHTML = CBUI.icon("lock","icon-sm");
 

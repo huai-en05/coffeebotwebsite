@@ -1,39 +1,23 @@
 /* =========================================================
    CoffeeBot Exchange — AI module
-   Two layers, by design:
+   Two layers that always run together:
      1. A rule-based engine (moving average + linear trend for
         forecasting; a weighted scoring model for allocation)
-        that ALWAYS works, needs no API key, and costs nothing.
-     2. An optional Gemini enhancement layer that turns the
-        rule-based numbers into a written recommendation. It
-        runs only if the admin enters a Gemini API key, which is
-        kept in this browser's localStorage only — never sent
-        anywhere but Google's API, and never committed to the repo.
+        that produces the numbers.
+     2. Gemini, reached through a Google Apps Script endpoint
+        (apps-script/Code.gs), which turns those numbers into
+        generated stats, insights and next actions. The API key
+        is stored in Apps Script — the browser never sees it.
+   Every generation comes back with an EcoLogits estimate of its
+   energy, emissions and water use, tallied in a local ledger.
    ========================================================= */
 
 const CBAI = (function () {
-  const GEMINI_KEY_STORAGE = "coffeebot_gemini_key";
-  const GEMINI_MODEL = "gemini-2.0-flash";
+  const RESULT_STORAGE = "coffeebot_ai_results_v1";
+  const FOOTPRINT_STORAGE = "coffeebot_ai_footprint_v1";
 
-  function getGeminiKey() {
-    try {
-      return localStorage.getItem(GEMINI_KEY_STORAGE) || "";
-    } catch (e) {
-      return "";
-    }
-  }
-  function setGeminiKey(key) {
-    try {
-      localStorage.setItem(GEMINI_KEY_STORAGE, key);
-    } catch (e) {}
-  }
-  function clearGeminiKey() {
-    try {
-      localStorage.removeItem(GEMINI_KEY_STORAGE);
-    } catch (e) {}
-  }
-  function hasGeminiKey() {
-    return !!getGeminiKey();
+  function endpoint() {
+    return (typeof CB_CONFIG !== "undefined" && CB_CONFIG.AI_ENDPOINT) || "";
   }
 
   /* ---------------- rule-based forecasting ---------------- */
@@ -137,59 +121,134 @@ const CBAI = (function () {
     return { decisions, remainingSupply: remaining };
   }
 
-  /* ---------------- Gemini enhancement (optional) ---------------- */
-  async function callGemini(prompt) {
-    const key = getGeminiKey();
-    if (!key) throw new Error("no_key");
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+  /* ---------------- data sent to Gemini, per task ---------------- */
+  const round1 = (n) => Math.round(n * 10) / 10;
+  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+  function forecastData() {
+    const state = CB.getState();
+    const byRegion = forecastByRegion(7);
+    return {
+      next7DaysByRegion: byRegion.map((f) => ({
+        region: f.region.name,
+        location: f.region.location,
+        dailyKg: f.values,
+        totalKg: round1(sum(f.values)),
+        baselineKgPerDay: round1(CB.dailyGroundsKg(f.region)),
+      })),
+      next7DayTotalKg: round1(sum(byRegion.map((f) => sum(f.values)))),
+      last7DayTotalKg: round1(sum(state.wasteHistory.slice(-7).map((h) => h.kg))),
+      last14DaysKg: state.wasteHistory.slice(-14).map((h) => h.kg),
+    };
+  }
+
+  function allocationData() {
+    const { decisions, remainingSupply } = recommendAllocation();
+    return {
+      rankedRequests: decisions.map((d, i) => ({
+        rank: i + 1,
+        requester: d.customer,
+        region: CB.regionName(d.region),
+        useCase: d.useCase,
+        frequency: d.frequency,
+        requestedKg: d.volumeKg,
+        recommendedKg: d.recommendedKg,
+        fullyFulfilled: d.fulfilled,
+        score: d.score,
+      })),
+      leftoverSupplyKgByRegion: Object.fromEntries(
+        Object.entries(remainingSupply).map(([id, kg]) => [CB.regionName(id), round1(kg)])
+      ),
+    };
+  }
+
+  function briefingData() {
+    const state = CB.getState();
+    const weekAgo = Date.now() - 7 * 86400000;
+    return {
+      pendingRequests: state.requests
+        .filter((r) => r.status === "pending")
+        .map((r) => ({ requester: r.customer, region: CB.regionName(r.region), kg: r.volumeKg, frequency: r.frequency, useCase: r.useCase })),
+      requestCounts: {
+        pending: state.requests.filter((r) => r.status === "pending").length,
+        accepted: state.requests.filter((r) => r.status === "accepted").length,
+        declined: state.requests.filter((r) => r.status === "declined").length,
+      },
+      collectionsLast7Days: state.collections
+        .filter((c) => c.collectedAt >= weekAgo)
+        .map((c) => ({ region: CB.regionName(c.region), kg: c.kg })),
+      partners: state.partners.map((p) => ({ name: p.name, type: p.type, region: CB.regionName(p.region), kgReceived: p.kgReceived, co2eKg: p.co2eKg })),
+      recentUsageLogs: state.usageLogs.slice(0, 5).map((u) => ({ partner: u.customer, compostKg: u.compostKg, soilRating: u.soilRating })),
+      forecast: forecastData(),
+    };
+  }
+
+  const TASK_DATA = { briefing: briefingData, forecast: forecastData, allocation: allocationData };
+
+  /* ---------------- Gemini via Apps Script ---------------- */
+  // text/plain keeps this a "simple" CORS request — Apps Script web
+  // apps can't answer a preflight, but they do allow simple POSTs.
+  async function generate(task) {
+    const url = endpoint();
+    if (!url) throw new Error("not_configured");
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 500 },
-      }),
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ task, data: TASK_DATA[task]() }),
     });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(`gemini_http_${res.status}: ${body.slice(0, 200)}`);
+    if (!res.ok) throw new Error(`Endpoint returned HTTP ${res.status}`);
+    const payload = await res.json();
+    if (!payload.ok) throw new Error(payload.error || "Unknown error from the AI endpoint");
+    saveResult(task, payload);
+    recordFootprint(payload.footprint);
+    return payload;
+  }
+
+  // Last generated result per task, so returning to a page shows it again.
+  function loadResults() {
+    try {
+      return JSON.parse(localStorage.getItem(RESULT_STORAGE) || "{}");
+    } catch (e) {
+      return {};
     }
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-    if (!text) throw new Error("empty_response");
-    return text.trim();
+  }
+  function saveResult(task, payload) {
+    try {
+      const all = loadResults();
+      all[task] = payload;
+      localStorage.setItem(RESULT_STORAGE, JSON.stringify(all));
+    } catch (e) {}
+  }
+  function lastResult(task) {
+    return loadResults()[task] || null;
   }
 
-  async function explainAllocation(decisions) {
-    const summary = decisions
-      .map((d) => `${d.customer} (${CB.regionName(d.region)}): requested ${d.volumeKg}kg, recommend ${d.recommendedKg}kg, frequency ${d.frequency}, score ${d.score}`)
-      .join("\n");
-    const prompt = `You are helping a coffee-grounds redistribution non-profit (CoffeeBot) decide how to allocate this week's used coffee grounds among requesting partner organisations. CoffeeBot's stated priority is impact and genuine reuse over revenue — grounds are given away largely for free. The scoring already weighs: requested quantity, how recurring/consistent the partner is, and how clearly they described their use case.
-
-Here is this week's ranked allocation recommendation:
-${summary}
-
-In 3-4 short sentences, write a plain-language explanation an operations staff member could read before approving this allocation. Mention anything that looks worth a second look (e.g. a request that couldn't be fully supplied, or a highly consistent partner). Do not repeat the raw numbers table — speak in prose.`;
-    return callGemini(prompt);
+  // Midpoint of each EcoLogits range, summed across generations.
+  function footprintTotals() {
+    const empty = { count: 0, energyWh: 0, gwpG: 0, waterMl: 0 };
+    try {
+      return { ...empty, ...JSON.parse(localStorage.getItem(FOOTPRINT_STORAGE) || "{}") };
+    } catch (e) {
+      return empty;
+    }
   }
-
-  async function explainForecast(byRegion) {
-    const lines = byRegion
-      .map((f) => `${f.region.name} (${f.region.location}): next 7 days = [${f.values.join(", ")}] kg/day`)
-      .join("\n");
-    const prompt = `You are summarising a 7-day used-coffee-grounds supply forecast for a non-profit called CoffeeBot, across 5 regions in Singapore. The forecast is produced by a moving-average + linear-trend model over recent collection history, anchored to known monthly cup-volume baselines per region.
-
-Forecast:
-${lines}
-
-In 3-4 short sentences, call out which region(s) are trending up or down and anything operationally worth flagging (e.g. a region approaching a level where collection frequency should change). Plain language, no raw tables.`;
-    return callGemini(prompt);
+  function recordFootprint(fp) {
+    if (!fp) return;
+    const mid = (r) => (r.min + r.max) / 2;
+    const t = footprintTotals();
+    t.count += 1;
+    t.energyWh += mid(fp.energyWh);
+    t.gwpG += mid(fp.gwpG);
+    t.waterMl += mid(fp.waterMl);
+    try {
+      localStorage.setItem(FOOTPRINT_STORAGE, JSON.stringify(t));
+    } catch (e) {}
   }
 
   return {
-    hasGeminiKey, getGeminiKey, setGeminiKey, clearGeminiKey,
+    endpoint,
     forecastTotal, forecastByRegion,
     scoreRequest, recommendAllocation,
-    callGemini, explainAllocation, explainForecast,
+    generate, lastResult, footprintTotals,
   };
 })();

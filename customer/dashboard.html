@@ -3,46 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard — CoffeeBot Exchange</title>
+<title>Impact — CoffeeBot Exchange</title>
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page">
-    <div class="page-head">
-      <div class="eyebrow">Your impact</div>
-      <h1>Dashboard</h1>
-      <p class="subtext">Impact is the headline here, not revenue — in line with CoffeeBot's own priorities.</p>
-    </div>
-
-    <div class="grid grid-3" style="margin-bottom:20px;">
-      <div class="stat-tile"><div class="num" id="statKg">—</div><div class="lbl">Grounds received to date</div></div>
-      <div class="stat-tile green"><div class="num green" id="statCo2">—</div><div class="lbl">CO2e saved (est.)</div></div>
-      <div class="stat-tile amber"><div class="num amber" id="statRating">—</div><div class="lbl">Avg. soil rating</div></div>
-    </div>
-
-    <div class="card">
-      <div class="flex-between">
-        <h2>Compost Produced by Week (kg)</h2>
-        <span class="pill region" id="regionPill"></span>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">your impact</div>
+        <h1>What your grounds became</h1>
+        <p class="subtext">Impact is the headline here, not revenue — in line with CoffeeBot's own priorities.</p>
       </div>
-      <div id="compostChart" style="margin-top:10px;"></div>
+      <div class="head-actions">
+        <a class="btn-primary" href="order.html#usage">Log usage</a>
+      </div>
+    </header>
+
+    <div class="kpis">
+      <div class="kpi"><div class="num" id="statKg">—</div><div class="lbl">Grounds received to date</div></div>
+      <div class="kpi"><div class="num green" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
+      <div class="kpi"><div class="num amber" id="statRating">—</div><div class="lbl">Avg. soil rating</div></div>
+      <div class="kpi"><div class="num" id="statLogs">—</div><div class="lbl">Weeks logged</div></div>
     </div>
 
-    <div class="card">
-      <h2>Usage Log</h2>
-      <p class="subtext" style="margin-bottom:10px;">Post-delivery outcomes — what you made, and how it performed.</p>
-      <div class="row-list" id="usageLog"></div>
+    <div class="layout-2-1">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head">
+            <h2>Compost produced by week</h2>
+            <span class="pill region" id="regionPill"></span>
+          </div>
+          <div id="compostChart"></div>
+        </div>
+
+        <div class="doodle-card row">
+          <span data-doodle="sproutCup" class="doodle"></span>
+          <div>
+            <div class="eyebrow">from cup to soil</div>
+            <h3>Every kilogram you compost keeps ~2.8 kg CO₂e out of the air.</h3>
+            <p>An estimate, based on the conversion factor this prototype uses until CoffeeBot supplies a real one.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="card-head">
+          <h2>Usage log</h2>
+        </div>
+        <p class="subtext" style="margin:-6px 0 12px;font-size:.82rem;">What you made, and how it performed.</p>
+        <div class="row-list" id="usageLog"></div>
+      </aside>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "dashboard.html" }));
+      CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "dashboard.html" }));
       const MY_NAME = "Simei RC Community Garden";
       const MY_REGION = "east";
       document.getElementById("regionPill").textContent = CB.regionName(MY_REGION);
@@ -55,6 +75,7 @@
       document.getElementById("statCo2").textContent = "~" + (partner ? partner.co2eKg : 0).toFixed(1) + " kg";
       const avgRating = myUsage.length ? (myUsage.reduce((a, u) => a + u.soilRating, 0) / myUsage.length).toFixed(1) : "—";
       document.getElementById("statRating").textContent = avgRating + (myUsage.length ? " / 5" : "");
+      document.getElementById("statLogs").textContent = myUsage.length;
 
       // Weekly compost chart — bucket usage logs (+ a little demo history) into the last 6 weeks.
       const weeks = ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Wk 5", "Wk 6"];
@@ -71,7 +92,8 @@
       CBUI.barChart({
         container: "#compostChart",
         labels: weeks,
-        series: [{ values, color: "var(--brown)" }],
+        series: [{ values, color: "var(--caramel)" }],
+        height: 240,
         formatY: (v) => v + "kg",
       });
 
@@ -81,11 +103,11 @@
           <div class="row">
             <div class="row-main">
               <div class="title">${u.compostKg} kg compost made</div>
-              <div class="meta">Soil rating ${u.soilRating}/5 · ~${(u.compostKg * 2.8).toFixed(1)} kg CO2e saved (est.)</div>
+              <div class="meta">Soil rating ${u.soilRating}/5 · ~${(u.compostKg * 2.8).toFixed(1)} kg CO₂e saved (est.)</div>
               <div class="meta">${CB.fmtDate(u.loggedAt)}</div>
             </div>
           </div>`).join("")
-        : '<div class="empty-note">No usage logged yet. <a href="order.html#usage">Log your first week →</a></div>';
+        : '<div class="empty-note">No usage logged yet. <a href="order.html#usage" style="text-decoration:underline;">Log your first week</a></div>';
     }
   </script>
 </body>

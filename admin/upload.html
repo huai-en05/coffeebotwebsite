@@ -3,50 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Upload Collection — CoffeeBot Admin</title>
+<title>Log Collection — CoffeeBot Admin</title>
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page page-narrow">
-    <div class="page-head">
-      <div class="eyebrow">Daily collection</div>
-      <h1>Upload today's collection</h1>
-      <p class="subtext">There's no automated tracking system yet — staff log grounds whenever they service a machine, by region.</p>
-    </div>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">daily collection</div>
+        <h1>Log a collection</h1>
+        <p class="subtext">There's no automated tracking yet — log grounds by region whenever you service a machine. Each entry feeds the supply forecast.</p>
+      </div>
+    </header>
 
-    <div class="card">
-      <form id="uploadForm">
-        <div class="field">
-          <label>Region</label>
-          <div class="input-box"><select id="uRegion" required></select></div>
-          <span class="hint" id="regionHint"></span>
+    <div class="layout-2-1">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>New collection</h2></div>
+          <form id="uploadForm">
+            <div class="field">
+              <label for="uRegion">Region</label>
+              <div class="input-box"><select id="uRegion" required></select></div>
+              <span class="hint" id="regionHint"></span>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="uKg">Grounds collected (kg)</label>
+                <div class="input-box"><input type="number" id="uKg" placeholder="4.5" step="0.1" min="0.1" required></div>
+              </div>
+              <div class="field">
+                <label for="uStaff">Staff / team</label>
+                <div class="input-box"><input type="text" id="uStaff" placeholder="e.g. Ops Team" value="Ops Team"></div>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">Log collection</button>
+          </form>
         </div>
-        <div class="field">
-          <label>Grounds collected (kg)</label>
-          <div class="input-box"><input type="number" id="uKg" placeholder="4.5" step="0.1" min="0.1" required></div>
-        </div>
-        <div class="field">
-          <label>Staff / team</label>
-          <div class="input-box"><input type="text" id="uStaff" placeholder="e.g. Ops Team" value="Ops Team"></div>
-        </div>
-        <button type="submit" class="btn-primary full">Log collection</button>
-      </form>
-    </div>
 
-    <div class="card">
-      <h2>Recent collections</h2>
-      <div class="row-list" id="collectionsList"></div>
+        <div class="card">
+          <div class="card-head"><h2>Recent collections</h2></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Region</th><th class="num">Kg</th><th>Staff</th><th>Collected</th></tr></thead>
+              <tbody id="collectionsList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <aside class="stack">
+        <div class="doodle-card">
+          <span data-doodle="bag" class="doodle"></span>
+          <div class="eyebrow">collection tip</div>
+          <h3>Empty the grounds bin whenever you restock.</h3>
+          <p>Weigh grounds before bagging, and keep them sealed and dry until pickup.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Site baselines</h2></div>
+          <div class="row-list" id="baselines"></div>
+        </div>
+      </aside>
     </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Admin view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
+      CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
       document.getElementById("uRegion").innerHTML = CBUI.regionOptions();
 
       function updateHint() {
@@ -57,16 +84,25 @@
       document.getElementById("uRegion").addEventListener("change", updateHint);
       updateHint();
 
+      document.getElementById("baselines").innerHTML = CB.REGIONS.map((r) => `
+        <div class="row">
+          <div class="row-main">
+            <div class="title">${r.name}</div>
+            <div class="meta">${r.location} · ~${r.cupsPerMonth.toLocaleString("en-SG")} cups/month</div>
+          </div>
+          <strong style="white-space:nowrap;">${CB.monthlyGroundsKg(r).toFixed(1)} kg<span class="subtext" style="font-weight:400;">/mo</span></strong>
+        </div>`).join("");
+
       function renderCollections() {
         const state = CB.getState();
         const list = [...state.collections].sort((a, b) => b.collectedAt - a.collectedAt).slice(0, 10);
         document.getElementById("collectionsList").innerHTML = list.map((c) => `
-          <div class="row">
-            <div class="row-main">
-              <div class="title">${c.kg} kg <span class="pill region" style="margin-left:6px;">${CB.regionName(c.region)}</span></div>
-              <div class="meta">${c.staff} · ${CB.fmtDate(c.collectedAt)}</div>
-            </div>
-          </div>`).join("");
+          <tr>
+            <td><span class="pill region">${CB.regionName(c.region)}</span></td>
+            <td class="num"><strong>${c.kg}</strong></td>
+            <td>${c.staff}</td>
+            <td>${CB.fmtDate(c.collectedAt)}</td>
+          </tr>`).join("");
       }
       renderCollections();
 
@@ -80,7 +116,7 @@
           s.wasteHistory.push({ date: Date.now(), kg });
           if (s.wasteHistory.length > 30) s.wasteHistory.shift();
         });
-        CBUI.toast("Collection logged!");
+        CBUI.toast("Collection logged.");
         document.getElementById("uploadForm").reset();
         document.getElementById("uStaff").value = "Ops Team";
         updateHint();

@@ -7,90 +7,111 @@
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <div id="topbarMount"></div>
-  <div class="page page-narrow">
-    <div class="page-head">
-      <div class="eyebrow">Weekly check-in</div>
-      <h1>Request grounds, log your impact</h1>
-      <p class="subtext">A clear use case matters more to CoffeeBot than price offered — most grounds are given away free.</p>
-    </div>
+  <div id="navMount"></div>
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow">weekly check-in</div>
+        <h1>Request grounds, log your impact</h1>
+        <p class="subtext">A clear use case matters more to CoffeeBot than price — most grounds are given away free.</p>
+      </div>
+    </header>
 
-    <div class="card" id="requestCard">
-      <h2>Submit this week's request</h2>
-      <p class="subtext" style="margin-bottom:16px;">Ticket <span id="ticketNo"></span> · new</p>
-      <form id="requestForm">
-        <div class="field">
-          <label>Your name / organisation</label>
-          <div class="input-box"><input type="text" id="rName" placeholder="e.g. Tampines Community Garden" required></div>
-        </div>
-        <div class="field">
-          <label>Region</label>
-          <div class="input-box"><select id="rRegion" required></select></div>
-          <span class="hint">Pick the region closest to where you'll collect from — this feeds CoffeeBot's regional supply planning.</span>
-        </div>
-        <div class="field">
-          <label>What will you use the grounds for?</label>
-          <textarea class="ta" id="rUse" placeholder="e.g. Composting for raised garden beds, weekly" required></textarea>
-        </div>
-        <div class="grid grid-2">
-          <div class="field">
-            <label>Grounds needed this week (kg)</label>
-            <div class="input-box"><input type="number" id="rVolume" placeholder="1.5" step="0.1" min="0.1" required></div>
+    <div class="layout-1-1">
+      <div class="stack">
+        <div class="card" id="requestCard">
+          <div class="card-head">
+            <h2>This week's request</h2>
+            <span class="subtext">Ticket <span id="ticketNo"></span></span>
           </div>
-          <div class="field">
-            <label>Pickup frequency</label>
-            <div class="input-box">
-              <select id="rFreq">
-                <option>Weekly</option>
-                <option>Fortnightly</option>
-                <option>One-off</option>
-              </select>
+          <form id="requestForm">
+            <div class="form-row">
+              <div class="field">
+                <label for="rName">Organisation</label>
+                <div class="input-box"><input type="text" id="rName" placeholder="e.g. Tampines Community Garden" required></div>
+              </div>
+              <div class="field">
+                <label for="rRegion">Region</label>
+                <div class="input-box"><select id="rRegion" required></select></div>
+              </div>
             </div>
-          </div>
+            <div class="field">
+              <label for="rUse">What will you use the grounds for?</label>
+              <textarea class="ta" id="rUse" placeholder="e.g. Composting for raised garden beds, weekly" required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="rVolume">Grounds needed (kg)</label>
+                <div class="input-box"><input type="number" id="rVolume" placeholder="1.5" step="0.1" min="0.1" required></div>
+              </div>
+              <div class="field">
+                <label for="rFreq">Pickup frequency</label>
+                <div class="input-box">
+                  <select id="rFreq">
+                    <option>Weekly</option>
+                    <option>Fortnightly</option>
+                    <option>One-off</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="rBid">Price per kg (optional)</label>
+              <div class="input-box"><input type="number" id="rBid" placeholder="0.00" step="0.10" min="0"></div>
+              <span class="hint">$0 is the norm. Price doesn't improve your chances — a clear use case does.</span>
+            </div>
+            <button type="submit" class="btn-primary">Submit request</button>
+          </form>
         </div>
-        <div class="field">
-          <label>Offer a price per kg? (optional — $0 is the norm and welcome)</label>
-          <div class="input-box"><input type="number" id="rBid" placeholder="0.00" step="0.10" min="0"></div>
-          <span class="hint">Shown for reference only — it doesn't improve your chances; a clear use case does.</span>
-        </div>
-        <button type="submit" class="btn-primary full">Submit request</button>
-      </form>
 
-      <div class="divider-line"></div>
-      <h3 style="margin-bottom:10px;">Your requests</h3>
-      <div class="row-list" id="myRequests"></div>
+        <div class="card" id="usage">
+          <div class="card-head">
+            <h2>Log last week's usage</h2>
+            <span class="subtext">Feeds your impact page</span>
+          </div>
+          <form id="usageForm">
+            <div class="form-row">
+              <div class="field">
+                <label for="uCompost">Compost / product made (kg)</label>
+                <div class="input-box"><input type="number" id="uCompost" placeholder="1.2" step="0.1" min="0" required></div>
+              </div>
+              <div class="field">
+                <label for="uSoil">Soil health (1–5, self-assessed)</label>
+                <div class="input-box"><input type="number" id="uSoil" min="1" max="5" placeholder="4" required></div>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">Log usage</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <div class="card-head"><h2>Your requests</h2></div>
+          <div class="row-list" id="myRequests"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Usage history</h2></div>
+          <div class="row-list" id="myUsage"></div>
+        </div>
+
+        <div class="doodle-card">
+          <span data-doodle="seedling" class="doodle"></span>
+          <div class="eyebrow">why we ask</div>
+          <h3>Your logs prove the impact.</h3>
+          <p>Compost made and soil ratings help CoffeeBot show where every kilogram went.</p>
+        </div>
+      </div>
     </div>
-
-    <div class="card" id="usage" style="margin-top:20px;">
-      <h2>Log last week's usage</h2>
-      <p class="subtext" style="margin-bottom:16px;">Feeds the impact dashboard &amp; supply forecast.</p>
-      <form id="usageForm">
-        <div class="grid grid-2">
-          <div class="field">
-            <label>Compost / product created (kg)</label>
-            <div class="input-box"><input type="number" id="uCompost" placeholder="1.2" step="0.1" min="0" required></div>
-          </div>
-          <div class="field">
-            <label>Soil health rating (1–5, self-assessed)</label>
-            <div class="input-box"><input type="number" id="uSoil" min="1" max="5" placeholder="4" required></div>
-          </div>
-        </div>
-        <button type="submit" class="btn-secondary full">Log usage</button>
-      </form>
-
-      <div class="divider-line"></div>
-      <h3 style="margin-bottom:10px;">Your usage history</h3>
-      <div class="row-list" id="myUsage"></div>
-    </div>
-  </div>
-  <div class="foot-note">CoffeeBot Exchange · Off-taker view</div>
+  </main>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
     if (session) {
-      CBUI.mount("#topbarMount", CBUI.topbar({ role: "customer", activePage: "order.html" }));
+      CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "order.html" }));
       const MY_NAME = "Simei RC Community Garden";
       const MY_REGION = "east";
 
@@ -126,8 +147,8 @@
           ? mine.map((u) => `
             <div class="row">
               <div class="row-main">
-                <div class="title">${u.compostKg} kg product made · soil rating ${u.soilRating}/5</div>
-                <div class="meta">~${(u.compostKg * 2.8).toFixed(1)} kg CO2e (est.) · ${CB.fmtDate(u.loggedAt)}</div>
+                <div class="title">${u.compostKg} kg made · soil rating ${u.soilRating}/5</div>
+                <div class="meta">~${(u.compostKg * 2.8).toFixed(1)} kg CO₂e (est.) · ${CB.fmtDate(u.loggedAt)}</div>
               </div>
             </div>`).join("")
           : '<div class="empty-note">No usage logged yet.</div>';
@@ -151,7 +172,7 @@
             status: "pending", createdAt: Date.now(),
           });
         });
-        CBUI.toast("Request submitted!");
+        CBUI.toast("Request submitted.");
         document.getElementById("requestForm").reset();
         document.getElementById("rName").value = MY_NAME;
         document.getElementById("rRegion").value = MY_REGION;
@@ -169,7 +190,7 @@
             customer: MY_NAME, region: MY_REGION, compostKg, soilRating, loggedAt: Date.now(),
           });
         });
-        CBUI.toast("Usage logged!");
+        CBUI.toast("Usage logged.");
         document.getElementById("usageForm").reset();
         renderUsage();
       });
