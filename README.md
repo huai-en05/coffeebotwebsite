@@ -63,6 +63,16 @@ The Gemini API key is stored in Apps Script's Script Properties, so it's
 never in the browser or this repo. The site only knows the Apps Script
 URL, set in `assets/js/config.js`.
 
+### When Gemini is unavailable
+
+If Gemini can't answer (endpoint not set, key problem, or Google
+overloaded even after the Apps Script's retries and fallback model), the
+panel shows a **rule-based version** in the same layout. It's built only
+from the rule engine's numbers, labelled with the reason Gemini failed,
+and not counted in the footprint ledger. For allocation, it lists which
+requests are fully or partly supplied, who is waitlisted, which requests
+need a clearer use case, and where supply is left over.
+
 ### Measuring the AI's own footprint (EcoLogits)
 
 Because this is a sustainability project, every AI generation reports its

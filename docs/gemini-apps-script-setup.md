@@ -46,7 +46,7 @@ The free tier is enough for this prototype.
    - Property: `GEMINI_API_KEY`
    - Value: the key from step 1
 4. Optional: add `GEMINI_MODEL` to use a different model. The default is
-   `gemini-2.5-flash`. If Google retires that model, change this property
+   `gemini-3.8-flash`. If Google retires that model, change this property
    to a current one (see <https://ai.google.dev/gemini-api/docs/models>);
    you don't need to edit any code.
 5. Click **Save script properties**.
@@ -98,6 +98,13 @@ you redeploy: **Deploy → Manage deployments → ✏️ edit → Version: New
 version → Deploy**. Editing the existing deployment this way keeps the
 same `/exec` URL, so `config.js` doesn't need changing.
 
+## If Gemini fails
+
+The site never shows a blank error. If the call fails for any reason, the
+panel shows a rule-based version of the same stats, insights and actions,
+with a note saying why Gemini was unavailable. Click **Regenerate** to try
+Gemini again.
+
 ## Troubleshooting
 
 | What you see | Fix |
@@ -107,6 +114,7 @@ same `/exec` URL, so `config.js` doesn't need changing.
 | `Gemini HTTP 400 ... API key not valid` | The key was mistyped or deleted. Create a new one in AI Studio. |
 | `Gemini HTTP 404 ... model ... not found` | The model was retired. Set `GEMINI_MODEL` to a current model name. |
 | `Gemini HTTP 429` | You hit the free-tier rate limit. Wait a minute and try again. |
+| `Gemini HTTP 503 ... high demand` | Google is temporarily overloaded. The script already retries twice and then falls back to `gemini-flash-lite-latest` (change it with a `GEMINI_FALLBACK_MODEL` property). If both are busy, try again in a minute. |
 | `Failed to fetch` / CORS error in the browser console | The deployment's access isn't set to **Anyone**, or you copied the editor URL instead of the `/exec` URL. Redeploy per step 5. |
 | Old behaviour after editing `Code.gs` | Redeploy a new version (see "Updating the script later"). |
 | "Footprint estimate unavailable" under a result | EcoLogits was unreachable, or doesn't list your `GEMINI_MODEL`. Check the supported names at <https://api.ecologits.ai/v1beta/models/google_genai>. |

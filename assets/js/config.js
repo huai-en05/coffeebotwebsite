@@ -6,5 +6,5 @@
    ========================================================= */
 
 const CB_CONFIG = {
-  AI_ENDPOINT: "",
+  AI_ENDPOINT: "https://script.google.com/macros/s/AKfycbxfgWYzo44Lj9aSbr3hk_Q_e-3ReEjnVqqkGqsT1riA7hPq4Z4aj5ieZ_X7Zs8Lh7jHeQ/exec",
 };

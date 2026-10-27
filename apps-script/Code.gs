@@ -12,7 +12,12 @@
    and returns structured JSON the admin pages render.
    ========================================================= */
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.8-flash";
+// Used when the main model stays busy (HTTP 429/5xx) after retries.
+// "-latest" aliases are kept current by Google, so this one won't be retired.
+const DEFAULT_FALLBACK_MODEL = "gemini-flash-lite-latest";
+const RETRYABLE = [429, 500, 502, 503, 504];
+const RETRY_DELAYS_MS = [1500, 4000];
 
 // EcoLogits (ecologits.ai) — open-source LCA-based estimates of an AI
 // request's energy, emissions and water use. No key needed.
@@ -127,11 +132,11 @@ function doPost(e) {
     return json_({
       ok: true,
       task: req.task,
-      model: getModel_(),
+      model: gen.model,
       generatedAt: new Date().toISOString(),
       result: gen.result,
       outputTokens: gen.outputTokens,
-      footprint: estimateFootprint_(gen.outputTokens, gen.latencySec),
+      footprint: estimateFootprint_(gen.model, gen.outputTokens, gen.latencySec),
     });
   } catch (err) {
     return json_({ ok: false, error: String((err && err.message) || err) });
@@ -144,11 +149,28 @@ function doGet() {
 }
 
 /* ---------------- Gemini call ---------------- */
+// Tries the main model (retrying briefly if Google is overloaded), then
+// the fallback model. Other errors — bad key, bad request — fail at once.
 function callGemini_(prompt) {
   const key = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not set in Script Properties.");
 
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + getModel_() + ":generateContent";
+  const models = [getModel_(), getFallbackModel_()].filter(function (m, i, all) { return m && all.indexOf(m) === i; });
+  let lastError = null;
+  for (let m = 0; m < models.length; m++) {
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      if (attempt > 0) Utilities.sleep(RETRY_DELAYS_MS[attempt - 1]);
+      const res = requestGemini_(models[m], key, prompt);
+      if (res.code === 200) return parseGemini_(models[m], res);
+      lastError = new Error("Gemini HTTP " + res.code + " (" + models[m] + "): " + res.body.slice(0, 300));
+      if (RETRYABLE.indexOf(res.code) === -1) throw lastError;
+    }
+  }
+  throw lastError;
+}
+
+function requestGemini_(model, key, prompt) {
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
   const started = Date.now();
   const res = UrlFetchApp.fetch(url, {
     method: "post",
@@ -165,13 +187,11 @@ function callGemini_(prompt) {
       },
     }),
   });
+  return { code: res.getResponseCode(), body: res.getContentText(), latencySec: (Date.now() - started) / 1000 };
+}
 
-  const latencySec = (Date.now() - started) / 1000;
-  const code = res.getResponseCode();
-  const body = res.getContentText();
-  if (code !== 200) throw new Error("Gemini HTTP " + code + ": " + body.slice(0, 300));
-
-  const data = JSON.parse(body);
+function parseGemini_(model, res) {
+  const data = JSON.parse(res.body);
   const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
   const text = parts.map(function (p) { return p.text || ""; }).join("");
   if (!text) throw new Error("Gemini returned an empty response.");
@@ -179,13 +199,13 @@ function callGemini_(prompt) {
   // Thinking tokens are generated output too, so they count toward the footprint.
   const usage = data.usageMetadata || {};
   const outputTokens = (usage.candidatesTokenCount || 0) + (usage.thoughtsTokenCount || 0);
-  return { result: JSON.parse(text), outputTokens: outputTokens, latencySec: latencySec };
+  return { model: model, result: JSON.parse(text), outputTokens: outputTokens, latencySec: res.latencySec };
 }
 
 /* ---------------- EcoLogits footprint ---------------- */
 // Returns min/max ranges in friendly units, or null if EcoLogits is
 // unreachable or doesn't know the model — the AI result still goes out.
-function estimateFootprint_(outputTokens, latencySec) {
+function estimateFootprint_(model, outputTokens, latencySec) {
   try {
     const res = UrlFetchApp.fetch(ECOLOGITS_URL, {
       method: "post",
@@ -193,7 +213,7 @@ function estimateFootprint_(outputTokens, latencySec) {
       muteHttpExceptions: true,
       payload: JSON.stringify({
         provider: ECOLOGITS_PROVIDER,
-        model_name: getModel_(),
+        model_name: model,
         output_token_count: outputTokens,
         request_latency: latencySec,
       }),
@@ -214,9 +234,13 @@ function estimateFootprint_(outputTokens, latencySec) {
   }
 }
 
-// Optional GEMINI_MODEL script property lets you switch models without editing code.
+// Optional GEMINI_MODEL / GEMINI_FALLBACK_MODEL script properties let you
+// switch models without editing code.
 function getModel_() {
   return PropertiesService.getScriptProperties().getProperty("GEMINI_MODEL") || DEFAULT_MODEL;
+}
+function getFallbackModel_() {
+  return PropertiesService.getScriptProperties().getProperty("GEMINI_FALLBACK_MODEL") || DEFAULT_FALLBACK_MODEL;
 }
 
 function json_(obj) {
@@ -235,6 +259,7 @@ function testGemini() {
     last7DayTotalKg: 3.6,
   };
   const gen = callGemini_(TASKS.forecast(sample));
+  Logger.log("Model used: " + gen.model);
   Logger.log(JSON.stringify(gen.result, null, 2));
-  Logger.log("Footprint: " + JSON.stringify(estimateFootprint_(gen.outputTokens, gen.latencySec)));
+  Logger.log("Footprint: " + JSON.stringify(estimateFootprint_(gen.model, gen.outputTokens, gen.latencySec)));
 }

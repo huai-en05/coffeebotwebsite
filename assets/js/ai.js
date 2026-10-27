@@ -10,6 +10,8 @@
         is stored in Apps Script — the browser never sees it.
    Every generation comes back with an EcoLogits estimate of its
    energy, emissions and water use, tallied in a local ledger.
+   If Gemini can't answer, ruleBased() writes the same panel from
+   the rule engine alone, so admins always get a usable result.
    ========================================================= */
 
 const CBAI = (function () {
@@ -204,6 +206,136 @@ const CBAI = (function () {
     return payload;
   }
 
+  /* ---------------- rule-based fallback (no AI) ---------------- */
+  // Same shape as a Gemini result, built only from the numbers above.
+  const kg = (n) => round1(n) + " kg";
+  const list = (names) => names.length <= 2 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+
+  function allocationFallback() {
+    const { decisions, remainingSupply } = recommendAllocation();
+    const supply = sum(Object.values(remainingSupply)) + sum(decisions.map((d) => d.recommendedKg));
+    if (!decisions.length) {
+      return {
+        headline: "No pending requests — nothing to allocate this week.",
+        stats: [
+          { label: "Pending", value: "0", note: "Every request has been decided.", tone: "good" },
+          { label: "7-day supply", value: kg(supply), note: "Forecast grounds available across all regions.", tone: "neutral" },
+        ],
+        insights: ["All forecast supply is currently unallocated."],
+        actions: ["Invite recurring partners to submit next week's requests.", "Check whether any region's bins need an extra pickup."],
+      };
+    }
+    const full = decisions.filter((d) => d.fulfilled);
+    const partial = decisions.filter((d) => !d.fulfilled && d.recommendedKg > 0);
+    const none = decisions.filter((d) => d.recommendedKg === 0);
+    const unclear = decisions.filter((d) => !d.useCase || d.useCase.length <= 20);
+    const requested = sum(decisions.map((d) => d.volumeKg));
+    const allocated = sum(decisions.map((d) => d.recommendedKg));
+    const leftover = Object.entries(remainingSupply).filter(([, v]) => v >= 0.1).sort((a, b) => b[1] - a[1]);
+    const top = decisions[0];
+
+    const insights = [
+      `${top.customer} ranks first (score ${top.score}): a ${top.frequency.toLowerCase()} request for ${top.volumeKg} kg in ${CB.regionName(top.region)}.`,
+    ];
+    if (partial.length) insights.push(`${list(partial.map((d) => d.customer))} can only be partly supplied from their region's forecast.`);
+    if (none.length) insights.push(`${list(none.map((d) => d.customer))} get nothing this week — their region's supply is used up by higher-ranked requests.`);
+    if (leftover.length) insights.push(`Unallocated supply remains in ${list(leftover.map(([id, v]) => `${CB.regionName(id)} (${kg(v)})`))}.`);
+
+    const actions = [];
+    if (full.length) actions.push(`Approve the full allocations for ${list(full.map((d) => d.customer))}.`);
+    partial.forEach((d) => actions.push(`Offer ${d.customer} a partial pickup of ${d.recommendedKg} kg, or roll the rest to next week.`));
+    none.forEach((d) => actions.push(`Tell ${d.customer} their request is waitlisted for next week's supply.`));
+    unclear.forEach((d) => actions.push(`Ask ${d.customer} to describe how they'll use the grounds before approving.`));
+    if (leftover.length) actions.push(`Offer the leftover ${CB.regionName(leftover[0][0])} supply to recurring partners nearby.`);
+
+    return {
+      headline: `${full.length} of ${decisions.length} requests can be fully supplied from ${kg(supply)} of forecast grounds.`,
+      stats: [
+        { label: "Pending", value: String(decisions.length), note: "Requests scored this week.", tone: "neutral" },
+        { label: "Fully supplied", value: `${full.length} of ${decisions.length}`, note: "Requests covered by their region's forecast.", tone: full.length === decisions.length ? "good" : "watch" },
+        { label: "Allocated", value: kg(allocated), note: `Out of ${kg(requested)} requested.`, tone: allocated >= requested ? "good" : "watch" },
+        { label: "Leftover", value: kg(sum(leftover.map(([, v]) => v))), note: "Forecast supply not yet claimed.", tone: "neutral" },
+      ],
+      insights,
+      actions: actions.slice(0, 5),
+    };
+  }
+
+  function forecastFallback() {
+    const d = forecastData();
+    const regions = [...d.next7DaysByRegion].sort((a, b) => b.totalKg - a.totalKg);
+    const top = regions[0], low = regions[regions.length - 1];
+    const trend = d.last7DayTotalKg > 0 ? Math.round(((d.next7DayTotalKg - d.last7DayTotalKg) / d.last7DayTotalKg) * 100) : 0;
+    const share = d.next7DayTotalKg > 0 ? Math.round((top.totalKg / d.next7DayTotalKg) * 100) : 0;
+    return {
+      headline: `About ${kg(d.next7DayTotalKg)} of grounds expected next week, ${trend >= 0 ? "up" : "down"} ${Math.abs(trend)}% on last week.`,
+      stats: [
+        { label: "Next 7 days", value: kg(d.next7DayTotalKg), note: `Last 7 days: ${kg(d.last7DayTotalKg)}.`, tone: "neutral" },
+        { label: "Trend", value: (trend >= 0 ? "+" : "") + trend + "%", note: "Forecast vs. the last 7 days.", tone: trend >= 0 ? "good" : "watch" },
+        { label: "Top region", value: top.region, note: `${top.location}, ~${share}% of supply.`, tone: "neutral" },
+        { label: "Lowest region", value: low.region, note: `${low.location}, ~${kg(low.totalKg)} for the week.`, tone: "watch" },
+      ],
+      insights: [
+        `${top.region} (${top.location}) produces the most grounds at ~${kg(top.totalKg)} for the week.`,
+        `${low.region} is lowest at ~${kg(low.totalKg)}, so smaller requests suit it best.`,
+        `Supply is trending ${trend >= 0 ? "up" : "down"} — each region keeps its usual share of the total.`,
+      ],
+      actions: [
+        trend > 5 ? `Consider an extra ${top.region} pickup so bins don't overflow.` : `Keep ${top.region} on its usual collection rounds.`,
+        `Batch ${low.region} collections with a neighbouring region's round to save staff time.`,
+        "Route new requests toward regions with the most forecast supply.",
+      ],
+    };
+  }
+
+  function briefingFallback() {
+    const b = briefingData();
+    const pendingKg = sum(b.pendingRequests.map((r) => r.kg));
+    const collected = sum(b.collectionsLast7Days.map((c) => c.kg));
+    const byRegion = {};
+    b.collectionsLast7Days.forEach((c) => (byRegion[c.region] = (byRegion[c.region] || 0) + c.kg));
+    const missing = CB.REGIONS.map((r) => r.name).filter((n) => !byRegion[n]);
+    const co2 = sum(b.partners.map((p) => p.co2eKg));
+    const supply = b.forecast.next7DayTotalKg;
+    const insights = [
+      `${b.requestCounts.pending} request${b.requestCounts.pending === 1 ? "" : "s"} (${kg(pendingKg)}) waiting for a decision.`,
+      `${kg(collected)} collected over the last 7 days; ~${kg(supply)} forecast for the next 7.`,
+      pendingKg > supply ? "Pending demand is higher than next week's forecast supply." : "Next week's forecast covers all pending demand.",
+    ];
+    if (missing.length) insights.push(`No collections logged this week for ${list(missing)}.`);
+    const actions = [];
+    if (b.requestCounts.pending) actions.push("Review pending requests on the Allocation page.");
+    if (missing.length) actions.push(`Log any ${list(missing)} collections from this week's service rounds.`);
+    actions.push("Ask partners to log last week's usage so impact figures stay current.");
+    return {
+      headline: `${b.requestCounts.pending} pending request${b.requestCounts.pending === 1 ? "" : "s"} and ~${kg(supply)} of grounds forecast for next week.`,
+      stats: [
+        { label: "Pending", value: String(b.requestCounts.pending), note: `${kg(pendingKg)} requested.`, tone: b.requestCounts.pending ? "watch" : "good" },
+        { label: "Collected", value: kg(collected), note: "Logged in the last 7 days.", tone: "neutral" },
+        { label: "Forecast", value: kg(supply), note: "Expected over the next 7 days.", tone: "neutral" },
+        { label: "CO₂e saved", value: kg(co2), note: "Across all partners to date (est.).", tone: "good" },
+      ],
+      insights,
+      actions,
+    };
+  }
+
+  const FALLBACKS = { briefing: briefingFallback, forecast: forecastFallback, allocation: allocationFallback };
+
+  // Not cached or added to the footprint ledger — no AI was used.
+  function ruleBased(task, reason) {
+    return {
+      ok: true,
+      fallback: true,
+      reason,
+      task,
+      model: "Rule-based fallback",
+      generatedAt: new Date().toISOString(),
+      result: FALLBACKS[task](),
+      footprint: null,
+    };
+  }
+
   // Last generated result per task, so returning to a page shows it again.
   function loadResults() {
     try {
@@ -249,6 +381,6 @@ const CBAI = (function () {
     endpoint,
     forecastTotal, forecastByRegion,
     scoreRequest, recommendAllocation,
-    generate, lastResult, footprintTotals,
+    generate, ruleBased, lastResult, footprintTotals,
   };
 })();

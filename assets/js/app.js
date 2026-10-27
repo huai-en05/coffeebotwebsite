@@ -214,7 +214,8 @@ const CBUI = (function () {
   function fmtImpact(v, unit) {
     return (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + " " + unit;
   }
-  function footprintHtml(fp) {
+  function footprintHtml(fp, fallback) {
+    if (fallback) return `<span class="eco-line">${icon("leaf", "icon-sm")} No AI used for this run — no extra energy or water.</span>`;
     if (!fp) return `<span>Footprint estimate unavailable for this run.</span>`;
     return `<span class="eco-line">${icon("leaf", "icon-sm")}
       This run: ~${fmtImpact(mid(fp.energyWh), "Wh")} · ${fmtImpact(mid(fp.gwpG), "g CO₂e")} · ${fmtImpact(mid(fp.waterMl), "mL water")}</span>
@@ -232,6 +233,7 @@ const CBUI = (function () {
       </div>`).join("");
     const list = (items) => (items || []).map((t) => `<li>${esc(t)}</li>`).join("");
     return `
+      ${payload.fallback ? fallbackNoticeHtml(payload.reason) : ""}
       <p class="ai-headline">${esc(r.headline)}</p>
       <div class="ai-stats">${stats}</div>
       <div class="ai-columns">
@@ -239,19 +241,18 @@ const CBUI = (function () {
         <div><h4>Next actions</h4><ul class="ai-list actions">${list(r.actions)}</ul></div>
       </div>
       <div class="ai-foot">
-        ${footprintHtml(payload.footprint)}
+        ${footprintHtml(payload.footprint, payload.fallback)}
         <span>Generated ${esc(when)} · ${esc(payload.model || "Gemini")}</span>
       </div>`;
   }
 
-  function aiErrorHtml(err) {
-    const notConfigured = err.message === "not_configured";
+  // The full reason stays on the payload (and in the console) for debugging.
+  function fallbackNoticeHtml(reason) {
+    if (reason) console.warn("Gemini unavailable:", reason);
     return `
-      <div class="ai-error">
-        <strong>${notConfigured ? "AI endpoint not connected yet" : "Couldn't generate insights"}</strong>
-        <p>${notConfigured
-          ? "Set <code>AI_ENDPOINT</code> in <code>assets/js/config.js</code> to your deployed Apps Script URL — see <code>docs/gemini-apps-script-setup.md</code>."
-          : esc(err.message)}</p>
+      <div class="ai-fallback">
+        <strong>Gemini is down right now.</strong>
+        <p>Showing the rule-based version instead. Click Regenerate to try again.</p>
       </div>`;
   }
 
@@ -289,7 +290,7 @@ const CBUI = (function () {
         body.innerHTML = aiResultHtml(await CBAI.generate(task));
         if (onGenerated) onGenerated();
       } catch (err) {
-        body.innerHTML = aiErrorHtml(err);
+        body.innerHTML = aiResultHtml(CBAI.ruleBased(task, err.message));
       } finally {
         btn.disabled = false;
         btn.textContent = "Regenerate";
