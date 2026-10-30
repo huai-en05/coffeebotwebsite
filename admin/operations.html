@@ -51,10 +51,12 @@
             <h2>Volume by region</h2>
           </div>
           <div id="segmentBars"></div>
+          <div class="card-doodle" id="opsDoodle"></div>
         </div>
       </aside>
     </div>
   </main>
+  <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
@@ -62,7 +64,9 @@
     const session = CBUI.requireAuth("admin");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "operations.html" }));
+      CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
+      document.getElementById("opsDoodle").innerHTML = CBUI.doodle("sitting-reading");
 
       function showFeedback(msg) {
         const bar = document.getElementById("feedbackBar");

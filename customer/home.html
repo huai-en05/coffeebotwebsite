@@ -41,9 +41,11 @@
         </div>
         <h3 id="siteName"></h3>
         <p class="subtext" id="siteMeta" style="margin-top:6px;"></p>
+        <div class="card-doodle" id="siteDoodle"></div>
       </aside>
     </div>
   </main>
+  <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
@@ -51,8 +53,10 @@
     const session = CBUI.requireAuth("customer");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "home.html" }));
+      CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       document.getElementById("greeting").textContent = "Hello, " + session.email.split("@")[0];
       document.getElementById("icUpload").innerHTML = CBUI.icon("arrow", "icon-sm");
+      document.getElementById("siteDoodle").innerHTML = CBUI.doodle("plant");
 
       const state = CB.getState();
       const myName = "Simei RC Community Garden"; // demo identity for this logged-in off-taker

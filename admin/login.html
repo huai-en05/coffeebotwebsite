@@ -9,8 +9,9 @@
 <body>
   <div class="auth-shell">
     <aside class="auth-art">
-      <a href="../index.html" class="brand">CoffeeBot <em>Exchange</em></a>
+      <a href="../index.html" class="brand" id="brandLink">CoffeeBot <em>Exchange</em></a>
       <h2>Every cup, given a <em>second life</em>.</h2>
+      <div id="authArt"></div>
     </aside>
     <main class="auth-panel">
       <div class="login-card">
@@ -43,6 +44,8 @@
   <script>
     document.getElementById("mailIcon").innerHTML = CBUI.icon("mail","icon-sm");
     document.getElementById("lockIcon").innerHTML = CBUI.icon("lock","icon-sm");
+    document.getElementById("brandLink").insertAdjacentHTML("afterbegin", CBUI.icon("cup"));
+    document.getElementById("authArt").outerHTML = CBUI.doodle("unboxing") + CBUI.mark("star", "a") + CBUI.mark("sparkle", "b");
 
     if (CB.getState().auth.admin) window.location.href = "home.html";
 

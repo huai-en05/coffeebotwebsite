@@ -6,58 +6,69 @@
 <title>CoffeeBot Exchange</title>
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
-  .wrap{max-width:1240px;margin:0 auto;padding:0 32px;}
-  .site-nav .nav-right > a:not(.btn-primary){font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-  .site-nav .nav-right > a:not(.btn-primary):hover{color:var(--cream);}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px;width:100%;}
+  .site-nav .nav-right > a:not(.btn-primary){font-weight:700;font-size:.92rem;color:var(--ink-soft);}
+  .site-nav .nav-right > a:not(.btn-primary):hover{color:var(--ink);}
+  .site-nav .nav-links a{font-weight:700;}
 
-  .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:72px 0 64px;}
-  .hero h1{font-size:clamp(3rem,6vw,5.4rem);line-height:1;}
-  .hero h1 em{font-style:normal;color:var(--caramel);}
-  .hero .lede{color:var(--muted);font-size:1.05rem;max-width:460px;margin:22px 0 30px;}
-  .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;}
-  .hero-stats{display:flex;gap:44px;margin-top:44px;}
-  .hero-stats strong{display:block;font-family:var(--font-display);font-weight:400;font-size:2.2rem;line-height:1;}
-  .hero-stats span{font-size:.7rem;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .hero{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;padding:64px 0 56px;}
+  .hero h1{font-size:clamp(3.2rem,6.4vw,5.6rem);line-height:.95;}
+  .hero h1 .under{position:relative;color:var(--cinnamon);white-space:nowrap;}
+  .hero h1 .under .mark{position:absolute;left:0;right:0;bottom:-.12em;height:.28em;width:100%;-webkit-mask-size:100% 100%;mask-size:100% 100%;}
+  .hero .lede{color:var(--ink-soft);font-size:1.12rem;max-width:470px;margin:26px 0 30px;}
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;}
+  .hero-stats{display:flex;gap:16px;margin-top:40px;flex-wrap:wrap;}
+  .hero-stats div{background:var(--paper);border:2px solid var(--edge);border-radius:var(--radius-sm);box-shadow:3px 3px 0 var(--latte);padding:10px 18px;}
+  .hero-stats strong{display:block;font-family:var(--font-display);font-size:2.2rem;line-height:1;}
+  .hero-stats span{font-size:.82rem;font-weight:700;color:var(--ink-soft);}
 
-  .bento{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:170px;gap:14px;}
-  .tile{border-radius:var(--radius);padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;background:var(--surface);border:1px solid var(--line);}
-  .tile strong{font-family:var(--font-display);font-weight:400;font-size:2.6rem;line-height:1;}
-  .tile span{font-size:.86rem;color:var(--muted);}
-  .tile.wide{grid-column:span 2;}
-  .tile.caramel{background:var(--caramel);border-color:var(--caramel);color:var(--bg);}
-  .tile.caramel span{color:rgba(37,25,18,.75);}
-  .tile.sage{background:#3d4434;border-color:#4b5340;}
-  .tile.sage strong{color:var(--ok);}
-  .tile .kicker{color:inherit;opacity:.7;}
+  .hero-art{position:relative;padding:20px;}
+  .hero-art .blob{position:absolute;inset:8% 4% 4% 8%;background:var(--latte);border-radius:46% 54% 42% 58% / 52% 44% 56% 48%;}
+  .hero-art .doodle{position:relative;width:100%;}
+  .hero-art .mark{position:absolute;}
+  .hero-art .m1{width:64px;height:64px;right:2%;top:-2%;}
+  .hero-art .m2{width:46px;height:46px;left:-2%;bottom:16%;background-color:var(--cinnamon);}
+  .hero-art .m3{width:38px;height:38px;left:16%;top:0;background-color:var(--caramel-lt);}
+  .hero-note{position:absolute;left:0;bottom:-2%;background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius-sm);box-shadow:3px 3px 0 var(--ink);padding:10px 14px;transform:rotate(-3deg);max-width:220px;}
+  .hero-note strong{display:block;font-family:var(--font-display);font-size:1.5rem;line-height:1;}
+  .hero-note span{font-size:.82rem;color:var(--ink-soft);font-weight:600;}
 
-  .section{padding:64px 0;border-top:1px solid var(--line);}
-  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap;}
-  .section-head h2{font-size:clamp(2rem,3.6vw,3rem);line-height:1.05;}
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-  .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;}
-  .step .n{font-family:var(--font-display);font-size:1.1rem;color:var(--caramel);}
-  .step h3{font-size:1.5rem;margin:28px 0 8px;}
-  .step p{margin:0;font-size:.9rem;color:var(--muted);}
+  .section{padding:64px 0;}
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:30px;flex-wrap:wrap;}
+  .section-head h2{font-size:clamp(2.4rem,4vw,3.4rem);line-height:1;}
+  .section-head p{margin:0;color:var(--ink-soft);max-width:420px;}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
+  .step{position:relative;background:var(--paper);border:2px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;}
+  .step .ic{width:58px;height:58px;border-radius:50%;background:var(--sand);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--cinnamon);}
+  .step .ic .icon{width:32px;height:32px;}
+  .step .n{position:absolute;right:18px;top:14px;font-family:var(--font-display);font-size:1.6rem;color:var(--caramel);}
+  .step h3{font-size:1.8rem;margin:16px 0 6px;}
+  .step p{margin:0;font-size:.92rem;color:var(--ink-soft);}
+  .step .next{position:absolute;right:-36px;top:34%;width:44px;height:34px;z-index:1;background-color:var(--cinnamon);}
+  .step:last-child .next{display:none;}
 
-  .doors{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-  .door{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:32px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
-  .door h2{font-size:2.2rem;}
-  .door p{margin:0 0 6px;color:var(--muted);max-width:420px;}
-
-  .site-foot{border-top:1px solid var(--line);padding:24px 0 40px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);}
+  .doors{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .door{display:grid;grid-template-columns:1fr 170px;gap:16px;align-items:end;background:var(--paper);border:2px solid var(--edge);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;}
+  .door.alt{background:var(--sand);}
+  .door h2{font-size:2.5rem;margin:6px 0 8px;}
+  .door p{margin:0 0 18px;color:var(--ink-soft);}
+  .door .doodle{width:100%;}
 
   @media(max-width:980px){
-    .hero{grid-template-columns:1fr;padding-top:44px;gap:40px;}
+    .hero{grid-template-columns:1fr;padding-top:40px;gap:28px;}
+    .hero-art{max-width:520px;}
     .steps{grid-template-columns:1fr 1fr;}
+    .step .next{display:none;}
     .doors{grid-template-columns:1fr;}
   }
   @media(max-width:560px){
     .wrap{padding:0 16px;}
-    .site-nav .nav-right > a:not(.btn-primary){display:none;}
-    .hero-stats{gap:24px;}
-    .bento{grid-auto-rows:140px;}
-    .tile strong{font-size:2rem;}
+    .site-nav .nav-right{display:none;}
+    .hero-stats strong{font-size:1.8rem;}
     .steps{grid-template-columns:1fr;}
+    .door{grid-template-columns:1fr;}
+    .door .doodle{width:150px;}
+    .hero-note{position:relative;right:auto;bottom:auto;margin-top:-10px;}
   }
 </style>
 </head>
@@ -68,7 +79,7 @@
         <a href="#how">How it works</a>
         <a href="#join">Join us</a>
       </nav>
-      <a class="brand" href="index.html">CoffeeBot <em>Exchange</em></a>
+      <a class="brand" href="index.html" id="brandLink">CoffeeBot <em>Exchange</em></a>
       <div class="nav-right">
         <a href="admin/login.html">Staff log in</a>
         <a class="btn-primary" href="customer/login.html">Request grounds</a>
@@ -76,67 +87,86 @@
     </div>
   </header>
 
-  <div class="wrap">
+  <main class="wrap" style="flex:1 0 auto;">
     <section class="hero">
       <div>
-        <h1>Every Cup Leaves <em>Something</em> Behind.</h1>
-        <p class="lede">We collect the used grounds from our coffee machines and pass them to gardens, schools and researchers — mostly free.</p>
+        <h1>Every cup leaves <span class="under">something<span id="underMark"></span></span> behind.</h1>
+        <p class="lede">We collect the used grounds from our coffee machines, dry them, and pass them on to gardens, schools and researchers — mostly for free.</p>
         <div class="hero-ctas">
           <a class="btn-primary" href="customer/login.html">Request grounds <span id="heroArrow"></span></a>
           <a class="btn-secondary" href="#how">How it works</a>
         </div>
         <div class="hero-stats">
-          <div><strong>5</strong><span>Regions</span></div>
-          <div><strong>3.9k</strong><span>Cups / month</span></div>
-          <div><strong>~15g</strong><span>Grounds / cup</span></div>
+          <div><strong>5</strong><span>regions</span></div>
+          <div><strong>3.9k</strong><span>cups a month</span></div>
+          <div><strong>~15g</strong><span>grounds a cup</span></div>
         </div>
       </div>
 
-      <div class="bento">
-        <div class="tile wide"><span class="kicker">Every month</span><div><strong>~35 kg</strong><br><span>of used grounds across our machines</span></div></div>
-        <div class="tile caramel"><span class="kicker">Usual price</span><div><strong>$0</strong><br><span>impact before revenue</span></div></div>
-        <div class="tile sage"><span class="kicker">Each year</span><div><strong>~420 kg</strong><br><span>kept out of landfill</span></div></div>
+      <div class="hero-art" id="heroArt">
+        <div class="blob"></div>
+        <div class="hero-note"><strong>~420 kg</strong><span>of grounds kept out of landfill each year</span></div>
       </div>
     </section>
 
     <section class="section" id="how">
       <div class="section-head">
         <h2>From machine to soil</h2>
+        <p>Four steps, every week. Usually free — what matters is that the grounds get used well.</p>
       </div>
-      <div class="steps">
-        <div class="step"><div class="n">01</div><h3>Brewed</h3><p>Our machines at polytechnics, hospitals and offices.</p></div>
-        <div class="step"><div class="n">02</div><h3>Collected</h3><p>Grounds are logged by region on every service round.</p></div>
-        <div class="step"><div class="n">03</div><h3>Matched</h3><p>Each week's supply goes to the clearest, most regular uses.</p></div>
-        <div class="step"><div class="n">04</div><h3>Regrown</h3><p>Compost, soil and research — with results logged back.</p></div>
-      </div>
+      <div class="steps" id="steps"></div>
     </section>
 
-    <section class="section" id="join">
+    <section class="section" id="join" style="padding-top:8px;">
       <div class="doors">
         <div class="door">
-          <span class="kicker">For partners</span>
-          <h2>I'd like grounds</h2>
-          <p>Request grounds each week and track what they became.</p>
-          <a class="btn-primary" href="customer/login.html">Partner log in</a>
+          <div>
+            <span class="kicker">For partners</span>
+            <h2>I'd like grounds</h2>
+            <p>Request grounds each week and track what they became.</p>
+            <a class="btn-primary" href="customer/login.html">Partner log in</a>
+          </div>
+          <div data-doodle="plant"></div>
         </div>
-        <div class="door">
-          <span class="kicker">For CoffeeBot staff</span>
-          <h2>I collect grounds</h2>
-          <p>Log collections, decide on requests and plan each week with AI.</p>
-          <a class="btn-secondary" href="admin/login.html">Staff log in</a>
+        <div class="door alt">
+          <div>
+            <span class="kicker">For CoffeeBot staff</span>
+            <h2>I collect grounds</h2>
+            <p>Log collections, decide on requests and plan each week with AI.</p>
+            <a class="btn-secondary" href="admin/login.html">Staff log in</a>
+          </div>
+          <div data-doodle="unboxing"></div>
         </div>
       </div>
     </section>
-
-    <footer class="site-foot">
-      <span>CoffeeBot Exchange · IS463 prototype</span>
-      <span>Demo logins are prefilled.</span>
-    </footer>
-  </div>
+  </main>
+  <div id="footMount"></div>
 
   <script src="assets/js/app.js"></script>
   <script>
+    document.getElementById("brandLink").insertAdjacentHTML("afterbegin", CBUI.icon("cup"));
     document.getElementById("heroArrow").innerHTML = CBUI.icon("arrow", "icon-sm");
+    document.getElementById("underMark").outerHTML = CBUI.mark("underline");
+    document.getElementById("heroArt").insertAdjacentHTML("beforeend",
+      CBUI.doodle("coffee") + CBUI.mark("sun", "m1") + CBUI.mark("star", "m2") + CBUI.mark("sparkle", "m3"));
+
+    const steps = [
+      ["cup", "Brewed", "Our machines at polytechnics, hospitals and offices."],
+      ["box", "Collected", "Staff bag the grounds on service rounds and log them by region."],
+      ["sun", "Dried", "Grounds are rested and dried before they go anywhere."],
+      ["sprout", "Regrown", "Partners turn them into compost, soil and research — and log results."],
+    ];
+    document.getElementById("steps").innerHTML = steps.map(([ic, title, text], i) => `
+      <div class="step">
+        <div class="ic">${CBUI.icon(ic)}</div>
+        <span class="n">0${i + 1}</span>
+        <h3>${title}</h3>
+        <p>${text}</p>
+        ${CBUI.mark("arrow-swoop", "next")}
+      </div>`).join("");
+
+    document.querySelectorAll("[data-doodle]").forEach((el) => { el.outerHTML = CBUI.doodle(el.dataset.doodle); });
+    CBUI.mount("#footMount", CBUI.footer({ role: "public" }));
   </script>
 </body>
 </html>

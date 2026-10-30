@@ -44,6 +44,7 @@
       </aside>
     </div>
   </main>
+  <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
@@ -51,6 +52,7 @@
     const session = CBUI.requireAuth("customer");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "dashboard.html" }));
+      CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
       const MY_REGION = "east";
       document.getElementById("regionPill").textContent = CB.regionName(MY_REGION);
