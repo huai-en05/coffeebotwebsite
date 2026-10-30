@@ -23,7 +23,7 @@
     <div class="kpis">
       <div class="kpi"><div class="num" id="sPending">—</div><div class="lbl">Pending requests scored</div></div>
       <div class="kpi"><div class="num green" id="sFulfilled">—</div><div class="lbl">Fully fulfillable this week</div></div>
-      <div class="kpi"><div class="num amber" id="sSupply">—</div><div class="lbl">7-day forecasted supply</div></div>
+      <div class="kpi"><div class="num amber" id="sSupply">—</div><div class="lbl">Dry-ready supply this week (weather-adjusted)</div></div>
     </div>
 
     <div class="card">
@@ -48,7 +48,9 @@
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/weather.js"></script>
   <script src="../assets/js/ai.js"></script>
+  <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
@@ -66,7 +68,7 @@
         document.getElementById("sFulfilled").textContent = decisions.filter((d) => d.fulfilled).length;
         const totalSupply = Object.values(remainingSupply).reduce((a, b) => a + b, 0) +
           decisions.reduce((a, d) => a + d.recommendedKg, 0);
-        document.getElementById("sSupply").textContent = totalSupply.toFixed(1) + " kg";
+        document.getElementById("sSupply").textContent = totalSupply.toFixed(totalSupply < 1 ? 2 : 1) + " kg";
 
         document.getElementById("rankBody").innerHTML = decisions.length
           ? decisions.map((d, i) => `
@@ -116,6 +118,8 @@
       });
 
       render();
+      // Allocation draws on weather-adjusted supply, so redo it once a fresh forecast arrives.
+      CBWeather.load().then(render).catch(() => {});
 
       CBUI.aiGenerator({
         container: "#aiMount",

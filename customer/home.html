@@ -71,7 +71,7 @@
       document.getElementById("regionPill").textContent = region.name;
       document.getElementById("siteName").textContent = region.location;
       document.getElementById("siteMeta").textContent =
-        `~${region.cupsPerMonth.toLocaleString("en-SG")} cups a month · about ${CB.monthlyGroundsKg(region).toFixed(1)} kg of grounds`;
+        `~${region.cupsPerMonth.toLocaleString("en-SG")} cups a month · about ${CB.monthlyGroundsKg(region).toFixed(1)} kg of wet grounds, ~${CB.dryKg(CB.monthlyGroundsKg(region)).toFixed(1)} kg once dried`;
 
       const list = document.getElementById("recentRequests");
       if (mine.length === 0) {

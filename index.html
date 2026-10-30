@@ -91,21 +91,21 @@
     <section class="hero">
       <div>
         <h1>Every cup leaves <span class="under">something<span id="underMark"></span></span> behind.</h1>
-        <p class="lede">We collect the used grounds from our coffee machines, dry them, and pass them on to gardens, schools and researchers — mostly for free.</p>
+        <p class="lede">We collect the used grounds from our coffee machines, dry them out, and pass them on to gardens, schools and researchers — mostly for free.</p>
         <div class="hero-ctas">
           <a class="btn-primary" href="customer/login.html">Request grounds <span id="heroArrow"></span></a>
           <a class="btn-secondary" href="#how">How it works</a>
         </div>
         <div class="hero-stats">
-          <div><strong>5</strong><span>regions</span></div>
-          <div><strong>3.9k</strong><span>cups a month</span></div>
-          <div><strong>~15g</strong><span>grounds a cup</span></div>
+          <div><strong id="stSites">4</strong><span>collection sites</span></div>
+          <div><strong id="stCups">1.8k</strong><span>cups a month</span></div>
+          <div><strong>~15g</strong><span>wet grounds a cup</span></div>
         </div>
       </div>
 
       <div class="hero-art" id="heroArt">
         <div class="blob"></div>
-        <div class="hero-note"><strong>~420 kg</strong><span>of grounds kept out of landfill each year</span></div>
+        <div class="hero-note"><strong id="stYear">~190 kg</strong><span>of wet grounds kept out of landfill each year</span></div>
       </div>
     </section>
 
@@ -142,8 +142,13 @@
   </main>
   <div id="footMount"></div>
 
+  <script src="assets/js/data.js"></script>
   <script src="assets/js/app.js"></script>
   <script>
+    const wetPerMonth = CB.COLLECTABLE.reduce((a, r) => a + CB.monthlyGroundsKg(r), 0);
+    document.getElementById("stSites").textContent = CB.COLLECTABLE.length;
+    document.getElementById("stCups").textContent = (CB.COLLECTABLE.reduce((a, r) => a + r.cupsPerMonth, 0) / 1000).toFixed(1) + "k";
+    document.getElementById("stYear").textContent = "~" + Math.round(wetPerMonth * 12 / 10) * 10 + " kg";
     document.getElementById("brandLink").insertAdjacentHTML("afterbegin", CBUI.icon("cup"));
     document.getElementById("heroArrow").innerHTML = CBUI.icon("arrow", "icon-sm");
     document.getElementById("underMark").outerHTML = CBUI.mark("underline");
@@ -151,9 +156,9 @@
       CBUI.doodle("coffee") + CBUI.mark("sun", "m1") + CBUI.mark("star", "m2") + CBUI.mark("sparkle", "m3"));
 
     const steps = [
-      ["cup", "Brewed", "Our machines at polytechnics, hospitals and offices."],
-      ["box", "Collected", "Staff bag the grounds on service rounds and log them by region."],
-      ["sun", "Dried", "Grounds are rested and dried before they go anywhere."],
+      ["cup", "Brewed", "Our machines at Woodlands 11, SAFRA Jurong, Changi Airport T2 and Skypark by Kiztopia."],
+      ["box", "Collected", "About 15 minutes a machine — staff bag the grounds, log them by region and bring them back."],
+      ["sun", "Dried", "Grounds rest 2–4 days, then dry for as long as the weather needs. 15g wet becomes 5–8g."],
       ["sprout", "Regrown", "Partners turn them into compost, soil and research — and log results."],
     ];
     document.getElementById("steps").innerHTML = steps.map(([ic, title, text], i) => `

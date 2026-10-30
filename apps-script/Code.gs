@@ -26,14 +26,17 @@ const ECOLOGITS_PROVIDER = "google_genai";
 
 // Shared background so every task answers with CoffeeBot's real context.
 const CONTEXT = [
-  "CoffeeBot is a Singapore social enterprise that runs coffee vending machines in 5 regions",
-  "(North: Republic Polytechnic, South: 100 Pasir Panjang, East: Changi General Hospital,",
-  "West: NTU, Central: Singapore Business Federation). Staff collect used coffee grounds",
-  "whenever they service a machine (there is no automated tracking) and give them to",
-  "off-takers such as community gardens, schools and researchers, mostly for free.",
+  "CoffeeBot is a Singapore social enterprise that runs coffee vending machines. Staff can collect",
+  "used grounds from four sites: North: Woodlands 11 (~400 cups/month), West: SAFRA Jurong (~500),",
+  "East: Changi Airport Terminal 2 (~500) and Central: Skypark by Kiztopia (~400). South's sites are",
+  "under contract, so nothing can be collected there. About 60% of drinks are coffee; each coffee cup",
+  "leaves ~15g of wet grounds, or 5-8g once dried. Collection takes ~15 minutes per machine and staff",
+  "spend 6-8 hours a week collecting and packing (admin work is extra). Travel time depends on where",
+  "riders are stationed and traffic. Grounds rest 2-4 days, then dry for as long as conditions need;",
+  "rain and humidity slow drying. There is no automated tracking, so collections are logged by hand.",
+  "Grounds go to off-takers such as community gardens, schools and researchers, mostly for free.",
   "CoffeeBot's priority is impact and genuine reuse over revenue. When allocating, staff weigh:",
   "the quantity a partner can take, convenience of collection, and frequency/consistency of reuse.",
-  "Ops staff spend roughly 6-8 hours a week on this programme.",
 ].join(" ");
 
 // Every task returns the same shape, so the site has one renderer.
@@ -77,7 +80,8 @@ const TASKS = {
       CONTEXT,
       "",
       "Write this week's operations briefing for CoffeeBot's admin team from the data below.",
-      "Cover supply vs. demand, which requests need a decision, regional balance and partner impact.",
+      "Cover supply vs. demand, which requests need a decision, regional balance, drying weather,",
+      "any open alerts (missing data, excess supply, wet weather) and partner impact.",
       "",
       "DATA:",
       JSON.stringify(data, null, 2),
@@ -91,8 +95,10 @@ const TASKS = {
     return [
       CONTEXT,
       "",
-      "Analyse this 7-day used-coffee-grounds supply forecast. It comes from a moving-average +",
-      "linear-trend model over recent collection history, anchored to each region's cup-volume baseline.",
+      "Analyse this 7-day used-coffee-grounds supply forecast. Wet intake comes from a moving-average +",
+      "linear-trend model over recent collection history, anchored to each site's cup-volume baseline.",
+      "Dry-ready supply converts wet to dried weight and scales each day by its drying weather.",
+      "Comment on the drying weather if it is provided (rainy or humid days slow drying).",
       "Call out regions trending up or down, how the forecast compares to last week, and anything",
       "operationally worth flagging (e.g. a region where collection frequency should change).",
       "",
@@ -110,7 +116,7 @@ const TASKS = {
       "",
       "Review this week's ranked allocation recommendation before an ops staffer approves it.",
       "Each request was scored on requested quantity, recurring frequency and clarity of use case,",
-      "then supplied from the 7-day regional forecast in score order. Point out partial or unfulfilled",
+      "then supplied from the region's 7-day dry-ready (dried, weather-adjusted) forecast in score order. Point out partial or unfulfilled",
       "requests, regions with leftover or short supply, and any request worth a second look.",
       "",
       "DATA:",
