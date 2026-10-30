@@ -27,8 +27,8 @@
             </div>
             <div class="form-row">
               <div class="field">
-                <label for="uKg">Grounds collected (kg)</label>
-                <div class="input-box"><input type="number" id="uKg" placeholder="4.5" step="0.1" min="0.1" required></div>
+                <label for="uKg">Wet grounds collected (kg)</label>
+                <div class="input-box"><input type="number" id="uKg" placeholder="1.0" step="0.1" min="0.1" required></div>
               </div>
               <div class="field">
                 <label for="uStaff">Staff / team</label>
@@ -63,18 +63,24 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/weather.js"></script>
+  <script src="../assets/js/ai.js"></script>
+  <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
-      document.getElementById("uRegion").innerHTML = CBUI.regionOptions();
+      // ?region=north (from a "missing data" alert) preselects that region.
+      const wanted = new URLSearchParams(location.search).get("region");
+      document.getElementById("uRegion").innerHTML = CBUI.regionOptions(wanted, { collectableOnly: true });
       document.getElementById("uploadDoodle").innerHTML = CBUI.doodle("unboxing");
 
       function updateHint() {
         const r = CB.regionById(document.getElementById("uRegion").value);
         document.getElementById("regionHint").textContent =
-          r ? `${r.location} · ~${r.cupsPerMonth} cups/month · ~${CB.dailyGroundsKg(r).toFixed(1)} kg/day baseline` : "";
+          r ? `${r.location} · ~${r.cupsPerMonth} cups/month · ~${CB.dailyGroundsKg(r).toFixed(2)} kg wet a day · ~${CB.ASSUMPTIONS.minutesPerMachine} min to collect` : "";
       }
       document.getElementById("uRegion").addEventListener("change", updateHint);
       updateHint();
@@ -83,9 +89,12 @@
         <div class="row">
           <div class="row-main">
             <div class="title">${r.name}</div>
-            <div class="meta">${r.location} · ~${r.cupsPerMonth.toLocaleString("en-SG")} cups/month</div>
+            <div class="meta">${r.collectable ? `${r.location} · ~${r.cupsPerMonth.toLocaleString("en-SG")} cups/month` : r.note}</div>
           </div>
-          <strong style="white-space:nowrap;">${CB.monthlyGroundsKg(r).toFixed(1)} kg<span class="subtext" style="font-weight:400;">/mo</span></strong>
+          ${r.collectable
+            ? `<strong style="white-space:nowrap;text-align:right;">${CB.monthlyGroundsKg(r).toFixed(1)} kg<span class="subtext" style="font-weight:400;"> wet/mo</span>
+               <span class="subtext" style="display:block;font-size:.78rem;font-weight:600;">~${CB.dryKg(CB.monthlyGroundsKg(r)).toFixed(1)} kg dried</span></strong>`
+            : `<span class="pill region">No collection</span>`}
         </div>`).join("");
 
       function renderCollections() {
@@ -116,6 +125,7 @@
         document.getElementById("uStaff").value = "Ops Team";
         updateHint();
         renderCollections();
+        CBAlerts.refresh();
       });
     }
   </script>

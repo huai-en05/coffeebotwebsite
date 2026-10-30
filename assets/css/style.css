@@ -275,6 +275,46 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
 .ledger .num{font-family:var(--font-display);font-weight:700;font-size:1.55rem;line-height:1.1;}
 .ledger .lbl{font-size:.76rem;font-weight:700;color:var(--ink-soft);margin-top:2px;}
 
+/* ---------- alerts (bell + Needs attention) ---------- */
+.alert-bell{position:relative;}
+.bell-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;
+  background:var(--paper);border:2px solid var(--edge);border-radius:50%;color:var(--ink);}
+.bell-btn:hover{border-color:var(--ink);}
+.bell-count{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
+  background:var(--caramel-lt);border:1.5px solid var(--ink);color:var(--ink);font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.alert-panel{display:none;position:absolute;right:-8px;top:52px;width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;z-index:40;
+  background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius);box-shadow:4px 5px 0 var(--latte);padding:16px 18px;}
+.alert-bell.open .alert-panel{display:block;}
+.alert-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.alert-list{list-style:none;margin:0;padding:0;}
+.alert-item{display:flex;gap:12px;padding:12px 0;border-top:2px dashed var(--line);}
+.alert-item:first-child{border-top:none;padding-top:4px;}
+.alert-icon{flex:0 0 auto;width:36px;height:36px;border-radius:50%;background:var(--warn-bg);border:1.5px solid var(--caramel);display:flex;align-items:center;justify-content:center;color:var(--warn);}
+.alert-text strong{display:block;font-weight:800;font-size:.95rem;}
+.alert-text p{margin:2px 0 6px;font-size:.86rem;color:var(--ink-soft);}
+.alert-actions{display:flex;gap:14px;align-items:center;font-size:.84rem;font-weight:700;}
+.alert-actions button{background:none;border:none;padding:0;cursor:pointer;color:var(--ink-soft);font:inherit;}
+.alert-actions button:hover{color:var(--ink);text-decoration:underline;}
+.alert-card .alert-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.alert-card .alert-item,.alert-card .alert-item:first-child{border:2px dashed var(--line);border-radius:var(--radius-sm);padding:12px 14px;background:#fff;}
+
+/* ---------- drying weather ---------- */
+.wx-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;}
+.wx-day{background:var(--paper);border:2px solid var(--line);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;}
+.wx-day.poor{background:var(--bad-bg);border-color:#e3bba8;}
+.wx-day.fair{background:var(--warn-bg);border-color:#ead0a4;}
+.wx-day.good{background:var(--ok-bg);border-color:#d3d3ad;}
+.wx-day .wx-name{font-family:var(--font-display);font-weight:700;font-size:1.25rem;line-height:1;}
+.wx-day .icon{width:34px;height:34px;margin:6px auto;color:var(--ink);}
+.wx-day .wx-rain{font-weight:800;font-size:.86rem;}
+.wx-day .wx-meta{font-size:.74rem;color:var(--ink-soft);}
+.wx-day .pill{margin-top:6px;}
+.pill.good{background:var(--ok-bg);color:var(--ok);}
+.pill.fair{background:var(--warn-bg);color:var(--warn);}
+.pill.poor{background:var(--bad-bg);color:var(--bad);}
+.wx-note{margin:14px 0 0;font-size:.86rem;color:var(--ink-soft);}
+.wx-mini .row-main .title{display:flex;align-items:center;gap:8px;}
+
 /* ---------- footer ---------- */
 .site-footer{flex-shrink:0;margin-top:24px;background:var(--paper);border-top:2px solid var(--line);position:relative;}
 .site-footer::before{
@@ -312,6 +352,7 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
   .topbar-inner{grid-template-columns:1fr auto;gap:10px 20px;}
   .nav-links{order:3;grid-column:1 / -1;justify-content:flex-start;overflow-x:auto;padding-bottom:2px;}
   .ai-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .wx-days{grid-template-columns:repeat(4,minmax(0,1fr));}
 }
 @media(max-width:900px){
   .topbar-inner{padding:10px 16px;}
@@ -327,6 +368,10 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
   h1{font-size:2.5rem;}
 }
 @media(max-width:560px){
+  .brand{font-size:1.45rem;gap:5px;}
+  .brand .icon{width:24px;height:24px;}
+  .nav-right{gap:8px;}
+  .bell-btn{width:36px;height:36px;}
   .form-row{grid-template-columns:1fr;}
   .card,.ai-card{padding:18px 16px;}
   .row-list .row{flex-wrap:wrap;}
@@ -335,4 +380,6 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
   .kpi .num{font-size:1.9rem;white-space:nowrap;}
   .ai-columns{grid-template-columns:1fr;}
   .ai-empty{flex-direction:column;align-items:flex-start;}
+  .wx-days{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .alert-card .alert-list{grid-template-columns:1fr;}
 }

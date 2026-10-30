@@ -6,30 +6,41 @@
    ========================================================= */
 
 const CB = (function () {
-  const STORAGE_KEY = "coffeebot_exchange_v1";
+  // v2: regions moved to the sites CoffeeBot can actually collect from,
+  // so older saved demo data is reseeded rather than mixed in.
+  const STORAGE_KEY = "coffeebot_exchange_v2";
 
   /* ---------- real data from the CoffeeBot Q&A ---------- */
-  // Monthly cup volumes per region (from CoffeeBot staff Q&A, answer #6).
-  // East & West were given as ranges — midpoint used for a single planning figure.
+  // Collection points CoffeeBot staff offered, with estimated monthly
+  // consumption. South's sites are all under contract, so nothing can be
+  // collected there — South partners can still request grounds.
   const REGIONS = [
-    { id: "north",   name: "North",   location: "Republic Polytechnic",            cupsPerMonth: 700  },
-    { id: "south",   name: "South",   location: "100 Pasir Panjang",                cupsPerMonth: 500  },
-    { id: "east",    name: "East",    location: "Changi General Hospital",          cupsPerMonth: 1100 }, // midpoint of 1000-1200
-    { id: "west",    name: "West",    location: "NTU",                              cupsPerMonth: 900  }, // midpoint of 800-1000
-    { id: "central", name: "Central", location: "Singapore Business Federation",     cupsPerMonth: 700  }, // midpoint of 600-800
+    { id: "north",   name: "North",   location: "Woodlands 11",           cupsPerMonth: 400, collectable: true  },
+    { id: "south",   name: "South",   location: "No collection point",    cupsPerMonth: 0,   collectable: false,
+      note: "South sites are under contract, so grounds can't be collected there." },
+    { id: "east",    name: "East",    location: "Changi Airport T2",      cupsPerMonth: 500, collectable: true  },
+    { id: "west",    name: "West",    location: "SAFRA Jurong",           cupsPerMonth: 500, collectable: true  },
+    { id: "central", name: "Central", location: "Skypark by Kiztopia",    cupsPerMonth: 400, collectable: true  },
   ];
+  const COLLECTABLE = REGIONS.filter((r) => r.collectable);
 
-  // Assumptions stated directly by CoffeeBot staff (Q&A answer #6):
+  // Assumptions stated directly by CoffeeBot staff:
   const ASSUMPTIONS = {
-    coffeeShareOfBeverages: 0.60, // ~60% of beverages purchased are coffee-based
-    gramsPerCoffeeCup: 15,        // ~15g of used grounds per coffee-based cup
+    coffeeShareOfBeverages: 0.60,     // ~60% of beverages purchased are coffee-based
+    gramsPerCoffeeCup: 15,            // ~15g of wet used grounds per coffee-based cup
+    dryGramsPerCup: { min: 5, max: 8 }, // what's left after drying, depending on moisture
+    restDays: { min: 2, max: 4 },     // wait before drying starts
+    minutesPerMachine: 15,            // collection time per machine
+    staffHoursPerWeek: { min: 6, max: 8 }, // collection + packing only, not admin work
   };
+  // Share of wet weight left once dried (midpoint of 5–8g out of 15g).
+  const DRY_RATIO = (ASSUMPTIONS.dryGramsPerCup.min + ASSUMPTIONS.dryGramsPerCup.max) / 2 / ASSUMPTIONS.gramsPerCoffeeCup;
 
   function regionById(id) {
     return REGIONS.find((r) => r.id === id);
   }
 
-  // Grounds generated per month for a region, in kg, from the stated assumptions.
+  // Wet grounds generated per month for a region, in kg, from the stated assumptions.
   function monthlyGroundsKg(region) {
     const coffeeCups = region.cupsPerMonth * ASSUMPTIONS.coffeeShareOfBeverages;
     const grams = coffeeCups * ASSUMPTIONS.gramsPerCoffeeCup;
@@ -38,6 +49,10 @@ const CB = (function () {
 
   function dailyGroundsKg(region) {
     return monthlyGroundsKg(region) / 30;
+  }
+
+  function dryKg(wetKg) {
+    return wetKg * DRY_RATIO;
   }
 
   /* ---------- seed / demo state ---------- */
@@ -92,13 +107,14 @@ const CB = (function () {
       // Historical waste-diverted-by-day, last 14 days (kg) — for charts
       wasteHistory: buildWasteHistory(now, day),
 
-      // Collections uploaded by admin staff (from "no tracking system — collected when staff services machines")
+      // Collections uploaded by admin staff (from "no tracking system — collected when staff services machines").
+      // Wet kg, roughly one week of each site's output. North's last round is
+      // deliberately old so the "missing data" alert shows in the demo.
       collections: [
-        { id: "C-21", region: "east", kg: 6.4, collectedAt: now - 1 * day, staff: "Ops Team" },
-        { id: "C-20", region: "north", kg: 3.1, collectedAt: now - 2 * day, staff: "Ops Team" },
-        { id: "C-19", region: "west", kg: 4.8, collectedAt: now - 2 * day, staff: "Ops Team" },
-        { id: "C-18", region: "central", kg: 2.9, collectedAt: now - 3 * day, staff: "Ops Team" },
-        { id: "C-17", region: "south", kg: 2.2, collectedAt: now - 3 * day, staff: "Ops Team" },
+        { id: "C-21", region: "east", kg: 1.1, collectedAt: now - 1 * day, staff: "Ops Team" },
+        { id: "C-20", region: "west", kg: 1.0, collectedAt: now - 2 * day, staff: "Ops Team" },
+        { id: "C-19", region: "central", kg: 0.8, collectedAt: now - 3 * day, staff: "Ops Team" },
+        { id: "C-18", region: "north", kg: 0.9, collectedAt: now - 9 * day, staff: "Ops Team" },
       ],
 
       auth: { customer: null, admin: null },
@@ -184,8 +200,8 @@ const CB = (function () {
   }
 
   return {
-    REGIONS, ASSUMPTIONS,
-    regionById, monthlyGroundsKg, dailyGroundsKg,
+    REGIONS, COLLECTABLE, ASSUMPTIONS, DRY_RATIO,
+    regionById, monthlyGroundsKg, dailyGroundsKg, dryKg,
     getState, setState, resetDemoData,
     fmtDate, regionName, nextId,
   };

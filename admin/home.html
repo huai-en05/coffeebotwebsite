@@ -26,6 +26,8 @@
       <div class="kpi"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
     </div>
 
+    <div data-alert-card style="margin-bottom:24px;"></div>
+
     <div id="aiMount" style="margin-bottom:24px;"></div>
 
     <div class="layout-2-1">
@@ -37,6 +39,8 @@
           </div>
           <div class="row-list" id="latestRequests"></div>
         </div>
+
+        <div id="weatherMount"></div>
       </div>
 
       <aside class="stack">
@@ -45,6 +49,7 @@
         <div class="card">
           <div class="card-head">
             <h2>Collections this week</h2>
+            <span class="subtext">wet kg</span>
           </div>
           <div id="regionBars"></div>
         </div>
@@ -56,7 +61,9 @@
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/weather.js"></script>
   <script src="../assets/js/ai.js"></script>
+  <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
     if (session) {
@@ -97,15 +104,18 @@
       const weekAgo = Date.now() - 7 * 86400000;
       const byRegion = {};
       state.collections.filter((c) => c.collectedAt >= weekAgo).forEach((c) => { byRegion[c.region] = (byRegion[c.region] || 0) + c.kg; });
-      const maxKg = Math.max(...Object.values(byRegion), 1);
-      document.getElementById("regionBars").innerHTML = CB.REGIONS.map((r) => {
+      const maxKg = Math.max(...Object.values(byRegion), 0.1);
+      document.getElementById("regionBars").innerHTML = CB.COLLECTABLE.map((r) => {
         const kg = byRegion[r.id] || 0;
         return `
           <div class="bar-row">
-            <div class="flex-between"><span>${r.name} <span class="subtext" style="font-size:.78rem;">${r.location}</span></span><strong>${kg.toFixed(1)} kg</strong></div>
+            <div class="flex-between"><span>${r.name} <span class="subtext" style="font-size:.78rem;">${r.location}</span></span><strong>${kg ? kg.toFixed(1) + " kg" : "none logged"}</strong></div>
             <div class="bar-track"><div class="bar-fill" style="width:${Math.round((kg / maxKg) * 100)}%;"></div></div>
           </div>`;
-      }).join("");
+      }).join("") + CB.REGIONS.filter((r) => !r.collectable).map((r) =>
+        `<p class="subtext" style="font-size:.82rem;margin-top:12px;">${r.name}: ${r.note}</p>`).join("");
+
+      CBWeather.card("#weatherMount", { title: "Drying outlook" });
     }
   </script>
 </body>

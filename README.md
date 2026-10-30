@@ -29,13 +29,29 @@ There's no real backend: all data (requests, usage logs, collections,
 approvals) is stored in your browser's `localStorage`, seeded with demo data
 on first load. Clearing site data resets it.
 
+## Drying weather and alerts
+
+- **Drying weather.** The Forecast page and Overview show a 7-day forecast
+  from [Open-Meteo](https://open-meteo.com) (free, no API key). Each day is
+  rated good, fair or poor for drying grounds. The **dry-ready** supply
+  (15g wet per cup becomes 5–8g dried) is scaled down on wet days, and
+  allocation uses that figure, because partners receive dried grounds.
+- **Alerts.** A bell on every admin page, plus a **Needs attention** card on
+  the Overview, flags:
+  - a region with no collection logged for over a week (links to the form
+    with that region picked),
+  - excess dried supply nobody has requested, and
+  - a wet week with 3+ poor drying days.
+  Alerts can be hidden for a day.
+
 ## Region categorisation
 
 Per CoffeeBot staff feedback ("add categorisation based on regions... so
 it's easier for analysis"), every request, collection, and forecast is
 tagged to one of the five regions CoffeeBot actually operates in — North,
-South, East, West, Central — using the real cup-volume figures from the
-Q&A. See **[docs/data-sources.md](docs/data-sources.md)** for exactly which
+South, East, West, Central. Supply comes from the four sites staff can
+collect from (Woodlands 11, Changi Airport T2, SAFRA Jurong, Skypark by
+Kiztopia); South's sites are under contract, so it has no collection point. See **[docs/data-sources.md](docs/data-sources.md)** for exactly which
 numbers are real vs. invented for the demo, and a note on why this build
 uses those five regions rather than a finer "North, North-East, ..." split.
 
@@ -104,7 +120,9 @@ assets/doodles/          free doodle illustrations and squiggles — credits in 
 assets/js/config.js      AI_ENDPOINT — your deployed Apps Script URL
 assets/js/data.js        region data, seed/demo state, localStorage persistence
 assets/js/app.js         top nav, footer, doodle icons, auth guard, charts, AI panel, Green AI ledger
-assets/js/ai.js          rule-based forecasting/allocation, Gemini calls, footprint tally
+assets/js/ai.js          rule-based forecasting/allocation (wet + dry), Gemini calls, footprint tally
+assets/js/weather.js     Open-Meteo drying forecast, cached; weather card
+assets/js/alerts.js      missing-data / excess-supply / wet-week alerts, bell + Needs attention card
 apps-script/Code.gs      Google Apps Script: prompts, Gemini call, EcoLogits estimate
 docs/data-sources.md     exactly which figures are real (Q&A) vs. demo-invented
 docs/gemini-apps-script-setup.md   step-by-step Gemini / Apps Script setup

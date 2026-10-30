@@ -88,6 +88,7 @@ const CBUI = (function () {
         <nav class="nav-links">${linksHtml}</nav>
         <a class="brand" href="home.html">${icon("cup")}CoffeeBot <em>Exchange</em></a>
         <div class="nav-right">
+          ${role === "admin" ? '<div class="alert-bell" data-alert-bell></div>' : ""}
           <span class="nav-user">${session ? icon("user", "icon-sm") + esc(session.email.split("@")[0]) : ""}</span>
           <button class="btn-secondary btn-sm" onclick="CBUI.logout('${role}')">Log out</button>
         </div>
@@ -155,8 +156,9 @@ const CBUI = (function () {
     setTimeout(() => el.remove(), 3200);
   }
 
-  function regionOptions(selectedId) {
-    return CB.REGIONS.map(
+  // collectableOnly: just the regions staff can log collections for.
+  function regionOptions(selectedId, { collectableOnly = false } = {}) {
+    return (collectableOnly ? CB.COLLECTABLE : CB.REGIONS).map(
       (r) =>
         `<option value="${r.id}" ${r.id === selectedId ? "selected" : ""}>${r.name} — ${r.location}</option>`
     ).join("");
