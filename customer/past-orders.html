@@ -37,6 +37,7 @@
       <div id="emptyNote" class="empty-note" style="display:none;">No past orders yet.</div>
     </div>
   </main>
+  <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
@@ -44,6 +45,7 @@
     const session = CBUI.requireAuth("customer");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "past-orders.html" }));
+      CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
       const state = CB.getState();
       const mine = state.requests.filter((r) => r.customer === MY_NAME).sort((a, b) => b.createdAt - a.createdAt);

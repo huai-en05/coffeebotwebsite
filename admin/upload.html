@@ -51,14 +51,15 @@
       </div>
 
       <aside class="stack">
-
         <div class="card">
           <div class="card-head"><h2>Site baselines</h2></div>
           <div class="row-list" id="baselines"></div>
+          <div class="card-doodle" id="uploadDoodle"></div>
         </div>
       </aside>
     </div>
   </main>
+  <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
@@ -66,7 +67,9 @@
     const session = CBUI.requireAuth("admin");
     if (session) {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
+      CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       document.getElementById("uRegion").innerHTML = CBUI.regionOptions();
+      document.getElementById("uploadDoodle").innerHTML = CBUI.doodle("unboxing");
 
       function updateHint() {
         const r = CB.regionById(document.getElementById("uRegion").value);
