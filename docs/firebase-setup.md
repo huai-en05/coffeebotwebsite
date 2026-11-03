@@ -9,7 +9,7 @@ is controlled by the security rules in [`firestore.rules`](../firestore.rules).
 The project ID is set in `assets/js/config.js`:
 
 ```js
-FIREBASE_PROJECT_ID: "coffeebot-8fea5",
+FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
 ```
 
 ## 1. Create the Firestore database

@@ -13,6 +13,6 @@
 const CB_CONFIG = {
   WEATHER_LAT: 1.3521,
   WEATHER_LON: 103.8198,
-  FIREBASE_PROJECT_ID: "coffeebot-8fea5",
+  FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
   AI_ENDPOINT: "https://script.google.com/macros/s/AKfycbxfgWYzo44Lj9aSbr3hk_Q_e-3ReEjnVqqkGqsT1riA7hPq4Z4aj5ieZ_X7Zs8Lh7jHeQ/exec",
 };
