@@ -53,7 +53,7 @@
   <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "allocation.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
@@ -97,27 +97,24 @@
       }
 
       function approveOne(id, customer) {
-        CB.setState((s) => {
-          const req = s.requests.find((r) => r.id === id);
-          if (req) req.status = "accepted";
-        });
-        showFeedback(`Allocation approved for ${customer}.`);
-        render();
+        CB.setRequestStatus([id], "accepted").then(() => {
+          showFeedback(`Allocation approved for ${customer}.`);
+          render();
+        }).catch((err) => CBUI.toast("Couldn't approve: " + err.message));
       }
 
       document.getElementById("approveAllBtn").addEventListener("click", () => {
-        let count = 0;
-        CB.setState((s) => {
-          result.decisions.forEach((d) => {
-            const req = s.requests.find((r) => r.id === d.id);
-            if (req && req.status === "pending") { req.status = "accepted"; count++; }
-          });
-        });
-        if (count) showFeedback(`${count} request${count > 1 ? "s" : ""} approved for this week's allocation.`);
-        render();
+        const pending = new Set(CB.getState().requests.filter((r) => r.status === "pending").map((r) => r.id));
+        const ids = result.decisions.map((d) => d.id).filter((id) => pending.has(id));
+        CB.setRequestStatus(ids, "accepted").then(() => {
+          if (ids.length) showFeedback(`${ids.length} request${ids.length > 1 ? "s" : ""} approved for this week's allocation.`);
+          render();
+        }).catch((err) => CBUI.toast("Couldn't approve: " + err.message));
       });
 
       render();
+      // New partner requests show up when you return to the tab.
+      document.addEventListener("cb:synced", render);
       // Allocation draws on weather-adjusted supply, so redo it once a fresh forecast arrives.
       CBWeather.load().then(render).catch(() => {});
 
@@ -127,7 +124,7 @@
         title: "Allocation review",
         buttonLabel: "Generate",
       });
-    }
+    });
   </script>
 </body>
 </html>

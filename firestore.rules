@@ -1,0 +1,145 @@
+rules_version = '2';
+
+// CoffeeBot Exchange — Firestore security rules.
+// The site has no real sign-in, so anyone can read and add records. These
+// rules limit the damage: every record must have exactly the expected
+// fields and types, the only change allowed afterwards is a request's
+// status, and nothing can be deleted from the site.
+// Paste into Firebase console → Firestore → Rules, then Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function exactly(fields) {
+      return request.resource.data.keys().hasAll(fields)
+          && request.resource.data.keys().hasOnly(fields);
+    }
+    function text(s, max) {
+      return s is string && s.size() > 0 && s.size() <= max;
+    }
+    // Any region that exists in the regions collection (existsAfter, so a
+    // seed batch can add regions and records that use them together).
+    function region(r) {
+      return r is string && r.matches('[a-z0-9-]+')
+          && existsAfter(/databases/$(database)/documents/regions/$(r));
+    }
+    function range(m) {
+      return m is map && m.keys().hasAll(['min', 'max']) && m.keys().hasOnly(['min', 'max'])
+          && m.min is number && m.max is number && m.min <= m.max;
+    }
+    function amount(n) {
+      return n is number && n >= 0 && n <= 100000;
+    }
+    function status(s) {
+      return s in ['pending', 'accepted', 'declined'];
+    }
+
+    match /requests/{id} {
+      allow read: if true;
+      allow create: if id.matches('R-[0-9]+')
+        && exactly(['id', 'customer', 'region', 'useCase', 'volumeKg', 'frequency', 'priceOffered', 'status', 'createdAt'])
+        && request.resource.data.id == id
+        && text(request.resource.data.customer, 120)
+        && region(request.resource.data.region)
+        && text(request.resource.data.useCase, 1000)
+        && amount(request.resource.data.volumeKg)
+        && text(request.resource.data.frequency, 40)
+        && amount(request.resource.data.priceOffered)
+        && status(request.resource.data.status)
+        && request.resource.data.createdAt is int;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && status(request.resource.data.status);
+      allow delete: if false;
+    }
+
+    match /usageLogs/{id} {
+      allow read: if true;
+      allow create: if id.matches('U-[0-9]+')
+        && exactly(['id', 'customer', 'region', 'compostKg', 'soilRating', 'loggedAt'])
+        && request.resource.data.id == id
+        && text(request.resource.data.customer, 120)
+        && region(request.resource.data.region)
+        && amount(request.resource.data.compostKg)
+        && request.resource.data.soilRating is int
+        && request.resource.data.soilRating >= 0 && request.resource.data.soilRating <= 5
+        && request.resource.data.loggedAt is int;
+      allow update, delete: if false;
+    }
+
+    match /collections/{id} {
+      allow read: if true;
+      allow create: if id.matches('C-[0-9]+')
+        && exactly(['id', 'region', 'kg', 'staff', 'collectedAt'])
+        && request.resource.data.id == id
+        && region(request.resource.data.region)
+        && amount(request.resource.data.kg)
+        && text(request.resource.data.staff, 120)
+        && request.resource.data.collectedAt is int;
+      allow update, delete: if false;
+    }
+
+    // Off-takers to date. The site only reads these; create is allowed so
+    // an empty database can be seeded.
+    match /partners/{id} {
+      allow read: if true;
+      allow create: if id.matches('p[0-9]+')
+        && exactly(['id', 'name', 'type', 'use', 'region', 'kgReceived', 'co2eKg'])
+        && request.resource.data.id == id
+        && text(request.resource.data.name, 120)
+        && request.resource.data.type in ['Recurring', 'One-off']
+        && text(request.resource.data.use, 200)
+        && region(request.resource.data.region)
+        && amount(request.resource.data.kgReceived)
+        && amount(request.resource.data.co2eKg);
+      allow update, delete: if false;
+    }
+
+    // Waste diverted per day, keyed by timestamp (W-<ms>). Added alongside
+    // each logged collection.
+    match /wasteHistory/{id} {
+      allow read: if true;
+      allow create: if exactly(['id', 'date', 'kg'])
+        && request.resource.data.date is int
+        && id == 'W-' + string(request.resource.data.date)
+        && request.resource.data.id == id
+        && amount(request.resource.data.kg);
+      allow update, delete: if false;
+    }
+
+    // Settings behind the forecasts. The site only reads these and can seed
+    // an empty database; change them in the Firebase console, which isn't
+    // bound by these rules.
+    match /regions/{id} {
+      allow read: if true;
+      allow create: if id.matches('[a-z0-9-]+')
+        && exactly(['id', 'name', 'location', 'cupsPerMonth', 'collectable', 'note', 'order'])
+        && request.resource.data.id == id
+        && text(request.resource.data.name, 60)
+        && text(request.resource.data.location, 120)
+        && amount(request.resource.data.cupsPerMonth)
+        && request.resource.data.collectable is bool
+        && request.resource.data.note is string && request.resource.data.note.size() <= 300
+        && request.resource.data.order is int;
+      allow update, delete: if false;
+    }
+
+    match /assumptions/{id} {
+      allow read: if true;
+      allow create: if id == 'current'
+        && exactly(['id', 'coffeeShareOfBeverages', 'gramsPerCoffeeCup', 'dryGramsPerCup', 'restDays', 'minutesPerMachine', 'staffHoursPerWeek'])
+        && request.resource.data.id == id
+        && request.resource.data.coffeeShareOfBeverages is number
+        && request.resource.data.coffeeShareOfBeverages >= 0 && request.resource.data.coffeeShareOfBeverages <= 1
+        && amount(request.resource.data.gramsPerCoffeeCup)
+        && range(request.resource.data.dryGramsPerCup)
+        && range(request.resource.data.restDays)
+        && amount(request.resource.data.minutesPerMachine)
+        && range(request.resource.data.staffHoursPerWeek);
+      allow update, delete: if false;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

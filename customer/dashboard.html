@@ -48,9 +48,10 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "dashboard.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
@@ -98,7 +99,7 @@
             </div>
           </div>`).join("")
         : '<div class="empty-note">No usage logged yet. <a href="order.html#usage" style="text-decoration:underline;">Log your first week</a></div>';
-    }
+    });
   </script>
 </body>
 </html>

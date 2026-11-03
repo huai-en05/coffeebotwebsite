@@ -162,8 +162,10 @@ const CBAlerts = (function () {
   }
 
   // Runs after each page's own script has mounted the top bar.
+  // Waits for shared data, so the page's own CB.ready() handler runs first.
   document.addEventListener("DOMContentLoaded", () => {
-    refresh();
+    CB.ready().then(refresh);
+    document.addEventListener("cb:synced", refresh);
     document.addEventListener("click", () => document.querySelectorAll("[data-alert-bell].open").forEach((b) => b.classList.remove("open")));
     CBWeather.load().then(refresh).catch(() => {});
   });

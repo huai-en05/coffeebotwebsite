@@ -69,7 +69,7 @@
   <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "upload.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       // ?region=north (from a "missing data" alert) preselects that region.
@@ -115,19 +115,19 @@
         const region = document.getElementById("uRegion").value;
         const kg = parseFloat(document.getElementById("uKg").value) || 0;
         const staff = document.getElementById("uStaff").value.trim() || "Ops Team";
-        CB.setState((s) => {
-          s.collections.unshift({ id: CB.nextId("C", s.collections), region, kg, staff, collectedAt: Date.now() });
-          s.wasteHistory.push({ date: Date.now(), kg });
-          if (s.wasteHistory.length > 30) s.wasteHistory.shift();
-        });
-        CBUI.toast("Collection logged.");
-        document.getElementById("uploadForm").reset();
-        document.getElementById("uStaff").value = "Ops Team";
-        updateHint();
-        renderCollections();
-        CBAlerts.refresh();
+        const btn = e.submitter;
+        if (btn) btn.disabled = true;
+        CB.addCollection({ region, kg, staff, collectedAt: Date.now() }).then(() => {
+          CBUI.toast("Collection logged.");
+          document.getElementById("uploadForm").reset();
+          document.getElementById("uStaff").value = "Ops Team";
+          updateHint();
+          renderCollections();
+          CBAlerts.refresh();
+        }).catch((err) => CBUI.toast("Couldn't log collection: " + err.message))
+          .finally(() => { if (btn) btn.disabled = false; });
       });
-    }
+    });
   </script>
 </body>
 </html>

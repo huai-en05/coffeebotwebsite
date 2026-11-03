@@ -49,9 +49,10 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "home.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       document.getElementById("greeting").textContent = "Hello, " + session.email.split("@")[0];
@@ -91,7 +92,7 @@
           )
           .join("");
       }
-    }
+    });
   </script>
 </body>
 </html>

@@ -41,9 +41,10 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "past-orders.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
@@ -71,7 +72,7 @@
             <td><span class="pill ${r.status}">${r.status}</span></td>
           </tr>`).join("");
       }
-    }
+    });
   </script>
 </body>
 </html>

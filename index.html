@@ -144,11 +144,15 @@
 
   <script src="assets/js/data.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/config.js"></script>
   <script>
-    const wetPerMonth = CB.COLLECTABLE.reduce((a, r) => a + CB.monthlyGroundsKg(r), 0);
-    document.getElementById("stSites").textContent = CB.COLLECTABLE.length;
-    document.getElementById("stCups").textContent = (CB.COLLECTABLE.reduce((a, r) => a + r.cupsPerMonth, 0) / 1000).toFixed(1) + "k";
-    document.getElementById("stYear").textContent = "~" + Math.round(wetPerMonth * 12 / 10) * 10 + " kg";
+    // Stats use the regions from Firestore, so they fill in once it answers.
+    CB.ready().then(() => {
+      const wetPerMonth = CB.COLLECTABLE.reduce((a, r) => a + CB.monthlyGroundsKg(r), 0);
+      document.getElementById("stSites").textContent = CB.COLLECTABLE.length;
+      document.getElementById("stCups").textContent = (CB.COLLECTABLE.reduce((a, r) => a + r.cupsPerMonth, 0) / 1000).toFixed(1) + "k";
+      document.getElementById("stYear").textContent = "~" + Math.round(wetPerMonth * 12 / 10) * 10 + " kg";
+    });
     document.getElementById("brandLink").insertAdjacentHTML("afterbegin", CBUI.icon("cup"));
     document.getElementById("heroArrow").innerHTML = CBUI.icon("arrow", "icon-sm");
     document.getElementById("underMark").outerHTML = CBUI.mark("underline");

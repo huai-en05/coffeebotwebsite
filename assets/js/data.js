@@ -1,8 +1,11 @@
 /* =========================================================
    CoffeeBot Exchange — data layer
-   A static site has no real backend, so this module simulates
-   one with localStorage. All seed figures below come straight
-   from the CoffeeBot staff Q&A (see /docs/data-sources.md).
+   Shared records (requests, usage logs, collections, partners,
+   waste history) and the settings behind the forecasts (regions,
+   assumptions) live in Firestore when FIREBASE_PROJECT_ID is set
+   in config.js, with localStorage as a cache; otherwise everything
+   stays in localStorage. All seed figures below come straight from the
+   CoffeeBot staff Q&A (see /docs/data-sources.md).
    ========================================================= */
 
 const CB = (function () {
@@ -24,6 +27,10 @@ const CB = (function () {
   ];
   const COLLECTABLE = REGIONS.filter((r) => r.collectable);
 
+  // Regions and assumptions below are the defaults and the seed for
+  // Firestore's `regions` and `assumptions` collections. Once the cloud
+  // copy loads, applySettings() swaps it in place, so edits made in the
+  // Firebase console take effect without changing this file.
   // Assumptions stated directly by CoffeeBot staff:
   const ASSUMPTIONS = {
     coffeeShareOfBeverages: 0.60,     // ~60% of beverages purchased are coffee-based
@@ -34,7 +41,29 @@ const CB = (function () {
     staffHoursPerWeek: { min: 6, max: 8 }, // collection + packing only, not admin work
   };
   // Share of wet weight left once dried (midpoint of 5–8g out of 15g).
-  const DRY_RATIO = (ASSUMPTIONS.dryGramsPerCup.min + ASSUMPTIONS.dryGramsPerCup.max) / 2 / ASSUMPTIONS.gramsPerCoffeeCup;
+  const dryRatio = () => (ASSUMPTIONS.dryGramsPerCup.min + ASSUMPTIONS.dryGramsPerCup.max) / 2 / ASSUMPTIONS.gramsPerCoffeeCup;
+  let DRY_RATIO = dryRatio();
+
+  // Seed copies, taken before any cloud values replace the live ones.
+  // Every region gets a note (empty unless it can't be collected from)
+  // and an order, which keeps the display order in Firestore.
+  const SEED_REGIONS = REGIONS.map((r, i) => ({ note: "", ...r, order: i + 1 }));
+  const SEED_ASSUMPTIONS = { id: "current", ...JSON.parse(JSON.stringify(ASSUMPTIONS)) };
+
+  // Swaps in regions and assumptions from state, keeping the same array
+  // and object references other scripts already hold.
+  function applySettings(s) {
+    if (s.regions && s.regions.length) {
+      REGIONS.splice(0, REGIONS.length, ...s.regions);
+      COLLECTABLE.splice(0, COLLECTABLE.length, ...REGIONS.filter((r) => r.collectable));
+    }
+    const a = s.assumptions && s.assumptions[0];
+    if (a) {
+      const { id, ...values } = a;
+      Object.assign(ASSUMPTIONS, values);
+    }
+    DRY_RATIO = dryRatio();
+  }
 
   function regionById(id) {
     return REGIONS.find((r) => r.id === id);
@@ -117,6 +146,10 @@ const CB = (function () {
         { id: "C-18", region: "north", kg: 0.9, collectedAt: now - 9 * day, staff: "Ops Team" },
       ],
 
+      // Settings the forecasts are built on; see applySettings().
+      regions: SEED_REGIONS.map((r) => ({ ...r })),
+      assumptions: [JSON.parse(JSON.stringify(SEED_ASSUMPTIONS))],
+
       auth: { customer: null, admin: null },
     };
   }
@@ -148,7 +181,8 @@ const CB = (function () {
         save(seeded);
         return seeded;
       }
-      return JSON.parse(raw);
+      // Defaults fill in anything an older saved copy doesn't have yet.
+      return { ...defaultState(), ...JSON.parse(raw) };
     } catch (e) {
       return defaultState();
     }
@@ -163,7 +197,10 @@ const CB = (function () {
   }
 
   function getState() {
-    if (!window.__cbState) window.__cbState = load();
+    if (!window.__cbState) {
+      window.__cbState = load();
+      applySettings(window.__cbState);
+    }
     return window.__cbState;
   }
 
@@ -199,10 +236,205 @@ const CB = (function () {
     return prefix + "-" + next;
   }
 
+  /* ---------- cloud sync (Firestore REST) ---------- */
+  // Requests, usage logs and collections are shared through Firestore, so a
+  // request a partner submits shows up for staff on any device. It uses
+  // plain REST calls rather than the Firebase SDK to keep every page light.
+  // Login sessions stay in this browser, and localStorage remains a cache
+  // so pages still work if Firestore is down.
+  const newestFirst = (field) => (a, b) => b[field] - a[field];
+  const CLOUD = {
+    requests:     { prefix: "R", order: newestFirst("createdAt") },
+    usageLogs:    { prefix: "U", order: newestFirst("loggedAt") },
+    collections:  { prefix: "C", order: newestFirst("collectedAt") },
+    partners:     { order: (a, b) => a.id.localeCompare(b.id, "en", { numeric: true }) },
+    // Oldest first, as the charts expect; only the latest 30 days are kept in view.
+    wasteHistory: { order: (a, b) => a.date - b.date, keep: 30 },
+    // Settings: regions in display order, and one "current" assumptions doc.
+    regions:      { order: (a, b) => a.order - b.order },
+    assumptions:  { order: () => 0 },
+  };
+  const ordered = (coll, list) => {
+    const sorted = [...list].sort(CLOUD[coll].order);
+    return CLOUD[coll].keep ? sorted.slice(-CLOUD[coll].keep) : sorted;
+  };
+  // wasteHistory entries had no id; they're keyed by their timestamp.
+  const wasteEntry = (date, kg) => ({ id: "W-" + date, date, kg });
+
+  function projectId() {
+    return (typeof CB_CONFIG !== "undefined" && CB_CONFIG.FIREBASE_PROJECT_ID) || "";
+  }
+  const cloudEnabled = () => !!projectId();
+  const dbPath = () => `projects/${projectId()}/databases/(default)/documents`;
+  const docName = (coll, id) => `${dbPath()}/${coll}/${id}`;
+
+  function toValue(v) {
+    if (v === null || v === undefined) return { nullValue: null };
+    if (typeof v === "boolean") return { booleanValue: v };
+    if (typeof v === "object") return { mapValue: { fields: toFields(v) } };
+    if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    return { stringValue: String(v) };
+  }
+  function fromValue(v) {
+    if ("mapValue" in v) return fromFields(v.mapValue.fields);
+    if ("integerValue" in v) return Number(v.integerValue);
+    if ("doubleValue" in v) return v.doubleValue;
+    if ("booleanValue" in v) return v.booleanValue;
+    if ("nullValue" in v) return null;
+    return v.stringValue;
+  }
+  const toFields = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, toValue(v)]));
+  const fromFields = (fields) => Object.fromEntries(Object.entries(fields || {}).map(([k, v]) => [k, fromValue(v)]));
+  const fromDoc = (doc) => fromFields(doc.fields);
+
+  async function fetchCollection(coll) {
+    const docs = [];
+    let token = "";
+    do {
+      const url = `https://firestore.googleapis.com/v1/${dbPath()}/${coll}?pageSize=300` +
+        (token ? "&pageToken=" + encodeURIComponent(token) : "");
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Firestore ${coll}: HTTP ${res.status}`);
+      const body = await res.json();
+      (body.documents || []).forEach((d) => docs.push(fromDoc(d)));
+      token = body.nextPageToken;
+    } while (token);
+    return ordered(coll, docs);
+  }
+
+  // All writes go through one atomic commit call.
+  async function commit(writes) {
+    const res = await fetch(`https://firestore.googleapis.com/v1/${dbPath()}:commit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ writes }),
+    });
+    if (res.ok) return;
+    const body = await res.json().catch(() => ({}));
+    const err = new Error((body.error && body.error.message) || `Firestore HTTP ${res.status}`);
+    err.status = body.error && body.error.status;
+    throw err;
+  }
+
+  const createWrite = (coll, rec) => ({
+    update: { name: docName(coll, rec.id), fields: toFields(rec) },
+    currentDocument: { exists: false },
+  });
+
+  // An empty collection gets the seed data from the Q&A, once. If another
+  // visitor seeds at the same moment, theirs wins and this fails harmlessly.
+  async function seedCloud(colls) {
+    const seed = defaultState();
+    seed.wasteHistory = seed.wasteHistory.map((h) => wasteEntry(h.date, h.kg));
+    const writes = [];
+    colls.forEach((coll) => seed[coll].forEach((rec) => writes.push(createWrite(coll, rec))));
+    await commit(writes).catch((e) => console.warn("Couldn't seed " + colls.join(", "), e));
+  }
+
+  // Order-insensitive fingerprint, since Firestore doesn't keep field order.
+  const canon = (v) => (v && typeof v === "object" ? Object.keys(v).sort().map((k) => [k, canon(v[k])]) : v);
+  const sig = (list) => JSON.stringify((list || []).map(canon));
+
+  // Replaces the cached shared collections with Firestore's. A collection
+  // that can't be read keeps its cached copy. Resolves true if anything changed.
+  async function pull(seeded) {
+    const names = Object.keys(CLOUD);
+    const results = await Promise.allSettled(names.map(fetchCollection));
+    if (results.every((r) => r.status === "rejected")) throw results[0].reason;
+    const empty = names.filter((_, i) => results[i].status === "fulfilled" && results[i].value.length === 0);
+    if (!seeded && empty.length) {
+      await seedCloud(empty);
+      return pull(true);
+    }
+    let changed = false;
+    setState((s) => names.forEach((coll, i) => {
+      const r = results[i];
+      if (r.status === "rejected") return console.warn(r.reason);
+      if (sig(s[coll]) !== sig(r.value)) { s[coll] = r.value; changed = true; }
+    }));
+    if (changed) applySettings(getState());
+    return changed;
+  }
+
+  const withTimeout = (p, ms) =>
+    Promise.race([p, new Promise((_, reject) => setTimeout(() => reject(new Error("timed out")), ms))]);
+
+  // Pages wait on this before rendering. It falls back to the cached copy
+  // if Firestore is slow, unreachable or not configured.
+  let readyPromise = null;
+  function ready() {
+    if (!readyPromise) {
+      readyPromise = cloudEnabled()
+        ? withTimeout(pull(), 6000).catch((e) => console.warn("Shared data unavailable, using this device's copy.", e))
+        : Promise.resolve();
+    }
+    return readyPromise;
+  }
+
+  // Coming back to the tab picks up changes made elsewhere; pages listen
+  // for "cb:synced" to re-render. One fetch per return, no polling.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !readyPromise || !cloudEnabled()) return;
+    pull()
+      .then((changed) => { if (changed) document.dispatchEvent(new CustomEvent("cb:synced")); })
+      .catch(() => {});
+  });
+
+  // Adds a record under the next free id (R-105, ...). The id is claimed with
+  // an exists:false check, so two people saving at once can't both get it;
+  // whoever loses refetches and takes the next one. Firestore runs the
+  // security rules before that check, so a taken id usually comes back as
+  // PERMISSION_DENIED (rules treat it as an edit), not ALREADY_EXISTS.
+  // `linked(rec)` returns [collection, record] pairs saved in the same commit.
+  async function addRecord(coll, fields, linked = () => []) {
+    const { prefix } = CLOUD[coll];
+    const keep = (rec, extra) => setState((s) => {
+      [[coll, rec], ...extra].forEach(([c, r]) => { s[c] = ordered(c, [...s[c], r]); });
+    });
+    if (!cloudEnabled()) {
+      const rec = { id: nextId(prefix, getState()[coll]), ...fields };
+      keep(rec, linked(rec));
+      return rec;
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const rec = { id: nextId(prefix, getState()[coll]), ...fields };
+      const extra = linked(rec);
+      try {
+        await commit([createWrite(coll, rec), ...extra.map(([c, r]) => createWrite(c, r))]);
+        keep(rec, extra);
+        return rec;
+      } catch (e) {
+        if (!["FAILED_PRECONDITION", "ALREADY_EXISTS", "PERMISSION_DENIED"].includes(e.status)) throw e;
+        const fresh = await fetchCollection(coll);
+        setState((s) => { s[coll] = fresh; });
+        if (!fresh.some((r) => r.id === rec.id)) throw e; // a genuine rules rejection, not a clash
+      }
+    }
+    throw new Error("Couldn't save, please try again.");
+  }
+
+  async function setRequestStatus(ids, status) {
+    if (cloudEnabled() && ids.length) {
+      await commit(ids.map((id) => ({
+        update: { name: docName("requests", id), fields: { status: toValue(status) } },
+        updateMask: { fieldPaths: ["status"] },
+        currentDocument: { exists: true },
+      })));
+    }
+    setState((s) => s.requests.forEach((r) => { if (ids.includes(r.id)) r.status = status; }));
+  }
+
   return {
-    REGIONS, COLLECTABLE, ASSUMPTIONS, DRY_RATIO,
+    REGIONS, COLLECTABLE, ASSUMPTIONS,
+    get DRY_RATIO() { return DRY_RATIO; },
     regionById, monthlyGroundsKg, dailyGroundsKg, dryKg,
     getState, setState, resetDemoData,
     fmtDate, regionName, nextId,
+    ready, setRequestStatus,
+    addRequest: (fields) => addRecord("requests", fields),
+    addUsageLog: (fields) => addRecord("usageLogs", fields),
+    // A collection also adds its weight to the waste-by-day history.
+    addCollection: (fields) => addRecord("collections", fields,
+      (rec) => [["wasteHistory", wasteEntry(rec.collectedAt, rec.kg)]]),
   };
 })();

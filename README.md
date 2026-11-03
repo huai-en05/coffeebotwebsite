@@ -25,9 +25,28 @@ Demo logins are prefilled on both login screens — just click **Log In**:
 - Customer: `customer@gmail.com`
 - Admin: `admin@gmail.com`
 
-There's no real backend: all data (requests, usage logs, collections,
-approvals) is stored in your browser's `localStorage`, seeded with demo data
-on first load. Clearing site data resets it.
+## Shared data (Firestore)
+
+Requests, usage logs, collections, partners and the waste-by-day history,
+along with approvals, are stored in **Cloud Firestore**. A request a partner submits shows up on the staff
+Operations and Allocation pages on any device, and a status staff set shows
+up for the partner. Pages load the latest data when they open, and fetch it
+again when you return to the tab. They don't poll.
+
+- The site talks to Firestore over plain REST calls, with no Firebase SDK,
+  so no extra JavaScript is downloaded on any page.
+- Each empty collection is seeded once with the Q&A demo data.
+- `localStorage` stays as a cache, so pages still render if Firestore can't
+  be reached.
+- The regions and the staff's stated assumptions (cups per month, grams per
+  cup and so on) are in Firestore too. Edit them in the Firebase console
+  and every page's forecasts use the new values on the next load. The
+  values in `data.js` are only the seed and the offline fallback.
+- Login sessions stay in each browser.
+
+**Setup:** follow **[docs/firebase-setup.md](docs/firebase-setup.md)**.
+Leave `FIREBASE_PROJECT_ID` empty in `assets/js/config.js` to keep all data
+in the browser only.
 
 ## Drying weather and alerts
 
@@ -117,8 +136,9 @@ customer/                login, home, order (request+usage log), dashboard, past
 admin/                   login, home, upload, operations, forecast, allocation
 assets/css/style.css     shared design system (Gaegu + Nunito; doodle notebook in beige, latte and medium browns)
 assets/doodles/          free doodle illustrations and squiggles — credits in docs/image-credits.md
-assets/js/config.js      AI_ENDPOINT — your deployed Apps Script URL
-assets/js/data.js        region data, seed/demo state, localStorage persistence
+assets/js/config.js      AI_ENDPOINT (Apps Script URL) and FIREBASE_PROJECT_ID
+assets/js/data.js        region data, seed/demo state, Firestore sync with a localStorage cache
+firestore.rules          Firestore security rules: record shapes, status-only updates, no deletes
 assets/js/app.js         top nav, footer, doodle icons, auth guard, charts, AI panel, Green AI ledger
 assets/js/ai.js          rule-based forecasting/allocation (wet + dry), Gemini calls, footprint tally
 assets/js/weather.js     Open-Meteo drying forecast, cached; weather card
@@ -126,14 +146,17 @@ assets/js/alerts.js      missing-data / excess-supply / wet-week alerts, bell + 
 apps-script/Code.gs      Google Apps Script: prompts, Gemini call, EcoLogits estimate
 docs/data-sources.md     exactly which figures are real (Q&A) vs. demo-invented
 docs/gemini-apps-script-setup.md   step-by-step Gemini / Apps Script setup
+docs/firebase-setup.md   creating the Firestore database and publishing the rules
 docs/image-credits.md    where every doodle and icon comes from, and its licence
 ```
 
 ## Status
 
 This is a functioning prototype for a client check-in/demo, not a
-production deployment — there is no real authentication, no server, and
-no persistence beyond the current browser. The only server piece is the
-Apps Script endpoint used for Gemini. It's designed so each piece
+production deployment. There is no real authentication, so anyone who can
+open the site can read the shared records, add new ones and change a
+request's status. `firestore.rules` restricts what each record can contain
+and blocks deletes, but it can't tell staff from partners. The server
+pieces are Firestore and the Apps Script endpoint used for Gemini. It's designed so each piece
 (auth, data storage, AI calls) is isolated enough to swap in a real
 backend later without rewriting the UI.

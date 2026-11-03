@@ -99,9 +99,10 @@
 
   <script src="../assets/js/data.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/config.js"></script>
   <script>
     const session = CBUI.requireAuth("customer");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "customer", activePage: "order.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
@@ -157,40 +158,45 @@
         const frequency = document.getElementById("rFreq").value;
         const priceOffered = parseFloat(document.getElementById("rBid").value) || 0;
 
-        CB.setState((s) => {
-          s.requests.unshift({
-            id: CB.nextId("R", s.requests),
-            customer: name, region, useCase, volumeKg, frequency, priceOffered,
-            status: "pending", createdAt: Date.now(),
-          });
-        });
-        CBUI.toast("Request submitted.");
-        document.getElementById("requestForm").reset();
-        document.getElementById("rName").value = MY_NAME;
-        document.getElementById("rRegion").value = MY_REGION;
-        renderRequests();
-        renderTicketNo();
+        const btn = e.submitter;
+        if (btn) btn.disabled = true;
+        CB.addRequest({
+          customer: name, region, useCase, volumeKg, frequency, priceOffered,
+          status: "pending", createdAt: Date.now(),
+        }).then(() => {
+          CBUI.toast("Request submitted.");
+          document.getElementById("requestForm").reset();
+          document.getElementById("rName").value = MY_NAME;
+          document.getElementById("rRegion").value = MY_REGION;
+          renderRequests();
+          renderTicketNo();
+        }).catch((err) => CBUI.toast("Couldn't submit request: " + err.message))
+          .finally(() => { if (btn) btn.disabled = false; });
       });
 
       document.getElementById("usageForm").addEventListener("submit", function (e) {
         e.preventDefault();
         const compostKg = parseFloat(document.getElementById("uCompost").value) || 0;
         const soilRating = parseInt(document.getElementById("uSoil").value, 10) || 0;
-        CB.setState((s) => {
-          s.usageLogs.unshift({
-            id: CB.nextId("U", s.usageLogs),
-            customer: MY_NAME, region: MY_REGION, compostKg, soilRating, loggedAt: Date.now(),
-          });
-        });
-        CBUI.toast("Usage logged.");
-        document.getElementById("usageForm").reset();
-        renderUsage();
+        const btn = e.submitter;
+        if (btn) btn.disabled = true;
+        CB.addUsageLog({
+          customer: MY_NAME, region: MY_REGION, compostKg, soilRating, loggedAt: Date.now(),
+        }).then(() => {
+          CBUI.toast("Usage logged.");
+          document.getElementById("usageForm").reset();
+          renderUsage();
+        }).catch((err) => CBUI.toast("Couldn't log usage: " + err.message))
+          .finally(() => { if (btn) btn.disabled = false; });
       });
+
+      // Status changes made by staff elsewhere show up when you return to the tab.
+      document.addEventListener("cb:synced", () => { renderRequests(); renderUsage(); renderTicketNo(); });
 
       if (window.location.hash === "#usage") {
         document.getElementById("usage").scrollIntoView();
       }
-    }
+    });
   </script>
 </body>
 </html>

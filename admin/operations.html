@@ -66,7 +66,7 @@
   <script src="../assets/js/alerts.js"></script>
   <script>
     const session = CBUI.requireAuth("admin");
-    if (session) {
+    if (session) CB.ready().then(() => {
       CBUI.mount("#navMount", CBUI.topbar({ role: "admin", activePage: "operations.html" }));
       CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
@@ -105,25 +105,24 @@
       }
 
       function decide(id, status) {
-        let customer = "";
-        CB.setState((s) => {
-          const req = s.requests.find((r) => r.id === id);
-          if (req) { req.status = status; customer = req.customer; }
-        });
-        showFeedback(`Request from ${customer} ${status}.`);
-        renderRequests();
+        const req = CB.getState().requests.find((r) => r.id === id);
+        CB.setRequestStatus([id], status).then(() => {
+          showFeedback(`Request from ${req ? req.customer : id} ${status}.`);
+          renderRequests();
+        }).catch((err) => CBUI.toast("Couldn't update request: " + err.message));
       }
 
       document.getElementById("approveAllBtn").addEventListener("click", () => {
-        let count = 0;
-        CB.setState((s) => {
-          s.requests.forEach((r) => { if (r.status === "pending") { r.status = "accepted"; count++; } });
-        });
-        if (count) showFeedback(`${count} pending request${count > 1 ? "s" : ""} accepted.`);
-        renderRequests();
+        const ids = CB.getState().requests.filter((r) => r.status === "pending").map((r) => r.id);
+        CB.setRequestStatus(ids, "accepted").then(() => {
+          if (ids.length) showFeedback(`${ids.length} pending request${ids.length > 1 ? "s" : ""} accepted.`);
+          renderRequests();
+        }).catch((err) => CBUI.toast("Couldn't update requests: " + err.message));
       });
 
       renderRequests();
+      // New partner requests show up when you return to the tab.
+      document.addEventListener("cb:synced", renderRequests);
 
       /* ---------- analytics ---------- */
       const state = CB.getState();
@@ -162,7 +161,7 @@
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
           </div>`;
       }).join("");
-    }
+    });
   </script>
 </body>
 </html>
