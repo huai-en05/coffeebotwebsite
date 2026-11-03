@@ -18,6 +18,10 @@ const DEFAULT_MODEL = "gemini-3.8-flash";
 const DEFAULT_FALLBACK_MODEL = "gemini-flash-lite-latest";
 const RETRYABLE = [429, 500, 502, 503, 504];
 const RETRY_DELAYS_MS = [1500, 4000];
+// No new attempt starts after this long, so the site (which gives up at
+// 45s) still gets an answer. A single slow Gemini call can't be cut short:
+// UrlFetchApp has no timeout option.
+const TIME_BUDGET_MS = 30000;
 
 // EcoLogits (ecologits.ai) — open-source LCA-based estimates of an AI
 // request's energy, emissions and water use. No key needed.
@@ -163,9 +167,14 @@ function callGemini_(prompt) {
 
   const models = [getModel_(), getFallbackModel_()].filter(function (m, i, all) { return m && all.indexOf(m) === i; });
   let lastError = null;
+  const started = Date.now();
   for (let m = 0; m < models.length; m++) {
     for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-      if (attempt > 0) Utilities.sleep(RETRY_DELAYS_MS[attempt - 1]);
+      const wait = attempt > 0 ? RETRY_DELAYS_MS[attempt - 1] : 0;
+      if (lastError && Date.now() - started + wait > TIME_BUDGET_MS) {
+        throw new Error("Gemini is slow or busy right now (gave up after " + Math.round((Date.now() - started) / 1000) + "s). " + lastError.message);
+      }
+      if (wait) Utilities.sleep(wait);
       const res = requestGemini_(models[m], key, prompt);
       if (res.code === 200) return parseGemini_(models[m], res);
       lastError = new Error("Gemini HTTP " + res.code + " (" + models[m] + "): " + res.body.slice(0, 300));

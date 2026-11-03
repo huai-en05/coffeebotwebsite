@@ -221,14 +221,28 @@ const CBAI = (function () {
   /* ---------------- Gemini via Apps Script ---------------- */
   // text/plain keeps this a "simple" CORS request — Apps Script web
   // apps can't answer a preflight, but they do allow simple POSTs.
+  // Gives up after GENERATE_TIMEOUT_MS so the panel falls back to the
+  // rule-based summary instead of waiting minutes on a slow Gemini.
+  const GENERATE_TIMEOUT_MS = 45000;
   async function generate(task) {
     const url = endpoint();
     if (!url) throw new Error("not_configured");
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ task, data: TASK_DATA[task]() }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GENERATE_TIMEOUT_MS);
+    let res;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ task, data: TASK_DATA[task]() }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === "AbortError") throw new Error(`Gemini didn't answer within ${GENERATE_TIMEOUT_MS / 1000} seconds`);
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok) throw new Error(`Endpoint returned HTTP ${res.status}`);
     const payload = await res.json();
     if (!payload.ok) throw new Error(payload.error || "Unknown error from the AI endpoint");
