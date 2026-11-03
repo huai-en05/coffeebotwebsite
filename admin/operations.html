@@ -13,29 +13,34 @@
       <div>
         <h1>Requests &amp; impact</h1>
       </div>
-      <div class="head-actions">
-        <button class="btn-secondary" id="approveAllBtn"><span id="icCheck"></span> Accept all pending</button>
-      </div>
     </header>
 
-    <div id="feedbackBar" style="display:none;"></div>
-
-    <div class="kpis">
-      <div class="kpi"><div class="num green" id="aCo2">—</div><div class="lbl">Cumulative CO₂e saved</div></div>
-      <div class="kpi"><div class="num" id="aTopSegment">—</div><div class="lbl">Top region by volume</div></div>
-      <div class="kpi"><div class="num amber" id="aSoil">—</div><div class="lbl">Avg. soil improvement rating</div></div>
-      <div class="kpi"><div class="num" id="aAccuracy">—</div><div class="lbl">Forecast accuracy (6-wk avg)</div></div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="requests">Requests</button>
+      <button type="button" class="tab" role="tab" data-tab="impact">Impact</button>
     </div>
 
-    <div class="layout-2-1">
-      <div class="stack">
-        <div class="card">
-          <div class="card-head">
-            <h2>Pending &amp; recent requests</h2>
-          </div>
-          <div class="row-list" id="requestsList"></div>
-        </div>
+    <section data-panel="requests">
+      <div id="feedbackBar" style="display:none;"></div>
 
+      <div class="card">
+        <div class="card-head">
+          <h2>Pending &amp; recent requests</h2>
+          <button class="btn-secondary btn-sm" id="approveAllBtn"><span id="icCheck"></span> Accept all pending</button>
+        </div>
+        <div class="row-list" id="requestsList"></div>
+      </div>
+    </section>
+
+    <section data-panel="impact">
+      <div class="kpis">
+        <div class="kpi"><div class="num green" id="aCo2">—</div><div class="lbl">Cumulative CO₂e saved</div></div>
+        <div class="kpi"><div class="num" id="aTopSegment">—</div><div class="lbl">Top region by volume</div></div>
+        <div class="kpi"><div class="num amber" id="aSoil">—</div><div class="lbl">Avg. soil improvement rating</div></div>
+        <div class="kpi"><div class="num" id="aAccuracy">—</div><div class="lbl">Forecast accuracy (6-wk avg)</div></div>
+      </div>
+
+      <div class="layout-2-1">
         <div class="card">
           <div class="card-head">
             <h2>Waste diverted by day</h2>
@@ -43,18 +48,16 @@
           </div>
           <div id="wasteChart"></div>
         </div>
-      </div>
 
-      <aside class="stack">
-        <div class="card">
+        <aside class="card">
           <div class="card-head">
             <h2>Volume by region</h2>
           </div>
           <div id="segmentBars"></div>
           <div class="card-doodle" id="opsDoodle"></div>
-        </div>
-      </aside>
-    </div>
+        </aside>
+      </div>
+    </section>
   </main>
   <div id="footMount"></div>
 
@@ -88,6 +91,7 @@
             <div class="row-main">
               <div class="title">${r.customer} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
               <div class="meta">${r.useCase}</div>
+              ${r.address ? `<div class="meta">${CBUI.esc(r.address)}</div>` : ""}
               <div class="meta">${r.volumeKg} kg · ${r.frequency} · ${CB.fmtDate(r.createdAt)}</div>
             </div>
             <div class="row-actions">
@@ -143,12 +147,14 @@
 
       // waste-by-day chart (last 7 of the stored history)
       const hist = state.wasteHistory.slice(-7);
-      CBUI.barChart({
-        container: "#wasteChart",
-        labels: hist.map((h) => new Date(h.date).toLocaleDateString("en-SG", { weekday: "short" })),
-        series: [{ values: hist.map((h) => h.kg), color: "var(--caramel)" }],
-        formatY: (v) => v + "kg",
-      });
+      function renderWasteChart() {
+        CBUI.barChart({
+          container: "#wasteChart",
+          labels: hist.map((h) => new Date(h.date).toLocaleDateString("en-SG", { weekday: "short" })),
+          series: [{ values: hist.map((h) => h.kg), color: "var(--caramel)" }],
+          formatY: (v) => v + "kg",
+        });
+      }
 
       // volume-by-region proportional bars
       const totalVol = CB.REGIONS.reduce((a, r) => a + (byRegionVol[r.id] || 0), 0) || 1;
@@ -161,6 +167,8 @@
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
           </div>`;
       }).join("");
+
+      CBUI.tabs({ onShow: (tab) => { if (tab === "impact") renderWasteChart(); } });
     });
   </script>
 </body>

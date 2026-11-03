@@ -26,12 +26,15 @@
       <div class="kpi"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
     </div>
 
-    <div data-alert-card style="margin-bottom:24px;"></div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="week">This week</button>
+      <button type="button" class="tab" role="tab" data-tab="briefing">AI briefing</button>
+    </div>
 
-    <div id="aiMount" style="margin-bottom:24px;"></div>
+    <section data-panel="week">
+      <div data-alert-card style="margin-bottom:24px;"></div>
 
-    <div class="layout-2-1">
-      <div class="stack">
+      <div class="layout-2-1">
         <div class="card">
           <div class="card-head">
             <h2>Latest customer requests</h2>
@@ -40,21 +43,20 @@
           <div class="row-list" id="latestRequests"></div>
         </div>
 
-        <div id="weatherMount"></div>
-      </div>
-
-      <aside class="stack">
-        <div id="ledgerMount"></div>
-
-        <div class="card">
+        <aside class="card">
           <div class="card-head">
             <h2>Collections this week</h2>
             <span class="subtext">wet kg</span>
           </div>
           <div id="regionBars"></div>
-        </div>
-      </aside>
-    </div>
+        </aside>
+      </div>
+    </section>
+
+    <section data-panel="briefing" class="layout-2-1">
+      <div id="aiMount"></div>
+      <aside id="ledgerMount"></aside>
+    </section>
   </main>
   <div id="footMount"></div>
 
@@ -115,7 +117,7 @@
       }).join("") + CB.REGIONS.filter((r) => !r.collectable).map((r) =>
         `<p class="subtext" style="font-size:.82rem;margin-top:12px;">${r.name}: ${r.note}</p>`).join("");
 
-      CBWeather.card("#weatherMount", { title: "Drying outlook" });
+      CBUI.tabs();
     });
   </script>
 </body>

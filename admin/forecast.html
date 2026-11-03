@@ -25,9 +25,14 @@
       <div class="kpi"><div class="num" id="sPeak">—</div><div class="lbl">Highest-supply region</div></div>
     </div>
 
-    <div id="weatherMount" style="margin-bottom:22px;"></div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="supply">Supply</button>
+      <button type="button" class="tab" role="tab" data-tab="weather">Drying weather</button>
+      <button type="button" class="tab" role="tab" data-tab="accuracy">Accuracy</button>
+      <button type="button" class="tab" role="tab" data-tab="ai">AI read</button>
+    </div>
 
-    <div class="layout-1-1 even">
+    <section data-panel="supply" class="layout-1-1 even">
       <div class="card">
         <div class="card-head">
           <h2>Intake vs. dry-ready</h2>
@@ -47,9 +52,11 @@
         </div>
         <div id="regionRows"></div>
       </div>
-    </div>
+    </section>
 
-    <div class="layout-1-1 even section-gap">
+    <section data-panel="weather" id="weatherMount"></section>
+
+    <section data-panel="accuracy" class="layout-1-1 even">
       <div class="card">
         <div class="card-head">
           <h2>Forecast accuracy</h2>
@@ -67,9 +74,9 @@
         <ul class="ai-list" id="method"></ul>
         <div class="card-doodle" id="methodDoodle" style="max-width:170px;margin:12px auto 0;"></div>
       </div>
-    </div>
+    </section>
 
-    <div id="aiMount" class="section-gap"></div>
+    <section data-panel="ai" id="aiMount"></section>
   </main>
   <div id="footMount"></div>
 
@@ -145,7 +152,7 @@
       const weeks = ["Wk -6", "Wk -5", "Wk -4", "Wk -3", "Wk -2", "Last wk"];
       const predicted = [3.6, 3.9, 3.5, 4.1, 3.8, 4.0];
       const actual =    [3.4, 4.0, 3.7, 3.9, 4.1, 3.9];
-      CBUI.barChart({
+      const renderAccuracy = () => CBUI.barChart({
         container: "#accuracyChart",
         labels: weeks,
         series: [
@@ -162,6 +169,11 @@
         title: "Forecast read",
         buttonLabel: "Generate",
       });
+
+      CBUI.tabs({ onShow: (tab) => {
+        if (tab === "supply") render();
+        if (tab === "accuracy") renderAccuracy();
+      } });
     });
   </script>
 </body>

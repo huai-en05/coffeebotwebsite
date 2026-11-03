@@ -141,6 +141,28 @@ const CBUI = (function () {
     });
   }
 
+  // In-page tabs. Markup: buttons with data-tab="x" inside .tabs, and panels
+  // with data-panel="x". The open tab lives in the URL hash so links like
+  // order.html#usage open the right tab. onShow(name) fires whenever a tab
+  // opens — charts measure their width, so pages redraw them there.
+  function tabs({ onShow } = {}) {
+    const buttons = [...document.querySelectorAll(".tabs [data-tab]")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+    if (!buttons.length) return;
+
+    function open(name, updateHash) {
+      if (!buttons.some((b) => b.dataset.tab === name)) name = buttons[0].dataset.tab;
+      buttons.forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
+      panels.forEach((p) => (p.hidden = p.dataset.panel !== name));
+      if (updateHash) history.replaceState(null, "", "#" + name);
+      if (onShow) onShow(name);
+    }
+
+    buttons.forEach((b) => b.addEventListener("click", () => open(b.dataset.tab, true)));
+    window.addEventListener("hashchange", () => open(location.hash.slice(1), false));
+    open(location.hash.slice(1), false);
+  }
+
   // The role comes from the email, not from which login page was used, so
   // typing a partner email on the staff page still lands in the partner portal.
   const STAFF_EMAILS = ["admin@gmail.com"];
@@ -172,10 +194,11 @@ const CBUI = (function () {
   }
 
   // collectableOnly: just the regions staff can log collections for.
+  // Only the region name is shown; the exact address is a separate field.
   function regionOptions(selectedId, { collectableOnly = false } = {}) {
     return (collectableOnly ? CB.COLLECTABLE : CB.REGIONS).map(
       (r) =>
-        `<option value="${r.id}" ${r.id === selectedId ? "selected" : ""}>${r.name} — ${r.location}</option>`
+        `<option value="${r.id}" ${r.id === selectedId ? "selected" : ""}>${r.name}</option>`
     ).join("");
   }
 
@@ -348,5 +371,5 @@ const CBUI = (function () {
       </div>`;
   }
 
-  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, loginAndRedirect, logout, toast, regionOptions, barChart, aiGenerator, greenLedger, esc };
+  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, loginAndRedirect, logout, toast, tabs, regionOptions, barChart, aiGenerator, greenLedger, esc };
 })();

@@ -15,85 +15,94 @@
       </div>
     </header>
 
-    <div class="layout-1-1">
-      <div class="stack">
-        <div class="card" id="requestCard">
-          <div class="card-head">
-            <h2>This week's request</h2>
-            <span class="subtext">Ticket <span id="ticketNo"></span></span>
-          </div>
-          <form id="requestForm">
-            <div class="form-row">
-              <div class="field">
-                <label for="rName">Organisation</label>
-                <div class="input-box"><input type="text" id="rName" placeholder="e.g. Tampines Community Garden" required></div>
-              </div>
-              <div class="field">
-                <label for="rRegion">Region</label>
-                <div class="input-box"><select id="rRegion" required></select></div>
-              </div>
-            </div>
-            <div class="field">
-              <label for="rUse">What will you use the grounds for?</label>
-              <textarea class="ta" id="rUse" placeholder="e.g. Composting for raised garden beds, weekly" required></textarea>
-            </div>
-            <div class="form-row">
-              <div class="field">
-                <label for="rVolume">Grounds needed (kg)</label>
-                <div class="input-box"><input type="number" id="rVolume" placeholder="1.5" step="0.1" min="0.1" required></div>
-              </div>
-              <div class="field">
-                <label for="rFreq">Pickup frequency</label>
-                <div class="input-box">
-                  <select id="rFreq">
-                    <option>Weekly</option>
-                    <option>Fortnightly</option>
-                    <option>One-off</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label for="rBid">Price per kg (optional)</label>
-              <div class="input-box"><input type="number" id="rBid" placeholder="0.00" step="0.10" min="0"></div>
-              <span class="hint">$0 is the norm. Price doesn't improve your chances — a clear use case does.</span>
-            </div>
-            <button type="submit" class="btn-primary">Submit request</button>
-          </form>
-        </div>
-
-        <div class="card" id="usage">
-          <div class="card-head">
-            <h2>Log last week's usage</h2>
-          </div>
-          <form id="usageForm">
-            <div class="form-row">
-              <div class="field">
-                <label for="uCompost">Compost / product made (kg)</label>
-                <div class="input-box"><input type="number" id="uCompost" placeholder="1.2" step="0.1" min="0" required></div>
-              </div>
-              <div class="field">
-                <label for="uSoil">Soil health (1–5, self-assessed)</label>
-                <div class="input-box"><input type="number" id="uSoil" min="1" max="5" placeholder="4" required></div>
-              </div>
-            </div>
-            <button type="submit" class="btn-primary">Log usage</button>
-          </form>
-        </div>
-      </div>
-
-      <div class="stack">
-        <div class="card">
-          <div class="card-head"><h2>Your requests</h2></div>
-          <div class="row-list" id="myRequests"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-head"><h2>Usage history</h2></div>
-          <div class="row-list" id="myUsage"></div>
-        </div>
-      </div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="request">Request grounds</button>
+      <button type="button" class="tab" role="tab" data-tab="usage">Log usage</button>
     </div>
+
+    <section data-panel="request" class="layout-1-1">
+      <div class="card" id="requestCard">
+        <div class="card-head">
+          <h2>This week's request</h2>
+          <span class="subtext">Ticket <span id="ticketNo"></span></span>
+        </div>
+        <form id="requestForm">
+          <div class="form-row">
+            <div class="field">
+              <label for="rName">Your organisation</label>
+              <div class="input-box"><input type="text" id="rName" placeholder="e.g. Tampines Community Garden" required></div>
+              <span class="hint">The garden, school or group receiving the grounds.</span>
+            </div>
+            <div class="field">
+              <label for="rRegion">Region</label>
+              <div class="input-box"><select id="rRegion" required></select></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rAddress">Address</label>
+            <div class="input-box"><input type="text" id="rAddress" placeholder="e.g. 1 Tampines Walk, #01-01" required></div>
+            <span class="hint">Where you'll use the grounds.</span>
+          </div>
+          <div class="field">
+            <label for="rUse">What will you use the grounds for?</label>
+            <textarea class="ta" id="rUse" placeholder="e.g. Composting for raised garden beds, weekly" required></textarea>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="rVolume">Grounds needed (kg)</label>
+              <div class="input-box"><input type="number" id="rVolume" placeholder="1.5" step="0.1" min="0.1" required></div>
+            </div>
+            <div class="field">
+              <label for="rFreq">Pickup frequency</label>
+              <div class="input-box">
+                <select id="rFreq">
+                  <option>Weekly</option>
+                  <option>Fortnightly</option>
+                  <option>One-off</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rBid">Price per kg (optional)</label>
+            <div class="input-box"><input type="number" id="rBid" placeholder="0.00" step="0.10" min="0"></div>
+            <span class="hint">$0 is the norm. Price doesn't improve your chances — a clear use case does.</span>
+          </div>
+          <button type="submit" class="btn-primary">Submit request</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Your requests</h2></div>
+        <div class="row-list" id="myRequests"></div>
+      </div>
+    </section>
+
+    <section data-panel="usage" class="layout-1-1">
+      <div class="card">
+        <div class="card-head">
+          <h2>Log last week's usage</h2>
+        </div>
+        <form id="usageForm">
+          <div class="form-row">
+            <div class="field">
+              <label for="uCompost">Compost / product made (kg)</label>
+              <div class="input-box"><input type="number" id="uCompost" placeholder="1.2" step="0.1" min="0" required></div>
+            </div>
+            <div class="field">
+              <label for="uSoil">Soil health (1–5, self-assessed)</label>
+              <div class="input-box"><input type="number" id="uSoil" min="1" max="5" placeholder="4" required></div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">Log usage</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Usage history</h2></div>
+        <div class="row-list" id="myUsage"></div>
+      </div>
+    </section>
   </main>
   <div id="footMount"></div>
 
@@ -153,6 +162,7 @@
         e.preventDefault();
         const name = document.getElementById("rName").value.trim() || MY_NAME;
         const region = document.getElementById("rRegion").value;
+        const address = document.getElementById("rAddress").value.trim();
         const useCase = document.getElementById("rUse").value.trim();
         const volumeKg = parseFloat(document.getElementById("rVolume").value) || 0;
         const frequency = document.getElementById("rFreq").value;
@@ -161,7 +171,7 @@
         const btn = e.submitter;
         if (btn) btn.disabled = true;
         CB.addRequest({
-          customer: name, region, useCase, volumeKg, frequency, priceOffered,
+          customer: name, region, address, useCase, volumeKg, frequency, priceOffered,
           status: "pending", createdAt: Date.now(),
         }).then(() => {
           CBUI.toast("Request submitted.");
@@ -193,9 +203,7 @@
       // Status changes made by staff elsewhere show up when you return to the tab.
       document.addEventListener("cb:synced", () => { renderRequests(); renderUsage(); renderTicketNo(); });
 
-      if (window.location.hash === "#usage") {
-        document.getElementById("usage").scrollIntoView();
-      }
+      CBUI.tabs();
     });
   </script>
 </body>

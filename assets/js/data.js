@@ -140,10 +140,10 @@ const CB = (function () {
       // Wet kg, roughly one week of each site's output. North's last round is
       // deliberately old so the "missing data" alert shows in the demo.
       collections: [
-        { id: "C-21", region: "east", kg: 1.1, collectedAt: now - 1 * day, staff: "Ops Team" },
-        { id: "C-20", region: "west", kg: 1.0, collectedAt: now - 2 * day, staff: "Ops Team" },
-        { id: "C-19", region: "central", kg: 0.8, collectedAt: now - 3 * day, staff: "Ops Team" },
-        { id: "C-18", region: "north", kg: 0.9, collectedAt: now - 9 * day, staff: "Ops Team" },
+        { id: "C-21", region: "east", kg: 1.1, collectedAt: now - 1 * day, address: "Changi Airport T2" },
+        { id: "C-20", region: "west", kg: 1.0, collectedAt: now - 2 * day, address: "SAFRA Jurong" },
+        { id: "C-19", region: "central", kg: 0.8, collectedAt: now - 3 * day, address: "Skypark by Kiztopia" },
+        { id: "C-18", region: "north", kg: 0.9, collectedAt: now - 9 * day, address: "Woodlands 11" },
       ],
 
       // Settings the forecasts are built on; see applySettings().

@@ -25,15 +25,14 @@
               <div class="input-box"><select id="uRegion" required></select></div>
               <span class="hint" id="regionHint"></span>
             </div>
-            <div class="form-row">
-              <div class="field">
-                <label for="uKg">Wet grounds collected (kg)</label>
-                <div class="input-box"><input type="number" id="uKg" placeholder="1.0" step="0.1" min="0.1" required></div>
-              </div>
-              <div class="field">
-                <label for="uStaff">Staff / team</label>
-                <div class="input-box"><input type="text" id="uStaff" placeholder="e.g. Ops Team" value="Ops Team"></div>
-              </div>
+            <div class="field">
+              <label for="uAddress">Collection address</label>
+              <div class="input-box"><input type="text" id="uAddress" placeholder="e.g. 11 Woodlands Square" required></div>
+              <span class="hint">The machine or site the grounds were collected from.</span>
+            </div>
+            <div class="field">
+              <label for="uKg">Wet grounds collected (kg)</label>
+              <div class="input-box"><input type="number" id="uKg" placeholder="1.0" step="0.1" min="0.1" required></div>
             </div>
             <button type="submit" class="btn-primary">Log collection</button>
           </form>
@@ -43,7 +42,7 @@
           <div class="card-head"><h2>Recent collections</h2></div>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Region</th><th class="num">Kg</th><th>Staff</th><th>Collected</th></tr></thead>
+              <thead><tr><th>Region</th><th>Address</th><th class="num">Kg</th><th>Collected</th></tr></thead>
               <tbody id="collectionsList"></tbody>
             </table>
           </div>
@@ -80,7 +79,7 @@
       function updateHint() {
         const r = CB.regionById(document.getElementById("uRegion").value);
         document.getElementById("regionHint").textContent =
-          r ? `${r.location} · ~${r.cupsPerMonth} cups/month · ~${CB.dailyGroundsKg(r).toFixed(2)} kg wet a day · ~${CB.ASSUMPTIONS.minutesPerMachine} min to collect` : "";
+          r ? `~${r.cupsPerMonth} cups/month · ~${CB.dailyGroundsKg(r).toFixed(2)} kg wet a day · ~${CB.ASSUMPTIONS.minutesPerMachine} min to collect` : "";
       }
       document.getElementById("uRegion").addEventListener("change", updateHint);
       updateHint();
@@ -103,8 +102,8 @@
         document.getElementById("collectionsList").innerHTML = list.map((c) => `
           <tr>
             <td><span class="pill region">${CB.regionName(c.region)}</span></td>
+            <td>${CBUI.esc(c.address || CB.regionById(c.region).location)}</td>
             <td class="num"><strong>${c.kg}</strong></td>
-            <td>${c.staff}</td>
             <td>${CB.fmtDate(c.collectedAt)}</td>
           </tr>`).join("");
       }
@@ -114,13 +113,12 @@
         e.preventDefault();
         const region = document.getElementById("uRegion").value;
         const kg = parseFloat(document.getElementById("uKg").value) || 0;
-        const staff = document.getElementById("uStaff").value.trim() || "Ops Team";
+        const address = document.getElementById("uAddress").value.trim();
         const btn = e.submitter;
         if (btn) btn.disabled = true;
-        CB.addCollection({ region, kg, staff, collectedAt: Date.now() }).then(() => {
+        CB.addCollection({ region, address, kg, collectedAt: Date.now() }).then(() => {
           CBUI.toast("Collection logged.");
           document.getElementById("uploadForm").reset();
-          document.getElementById("uStaff").value = "Ops Team";
           updateHint();
           renderCollections();
           CBAlerts.refresh();

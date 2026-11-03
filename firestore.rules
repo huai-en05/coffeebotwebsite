@@ -13,6 +13,11 @@ service cloud.firestore {
       return request.resource.data.keys().hasAll(fields)
           && request.resource.data.keys().hasOnly(fields);
     }
+    // Every field in `required`, plus any of `optional`, and nothing else.
+    function allowed(required, optional) {
+      return request.resource.data.keys().hasAll(required)
+          && request.resource.data.keys().hasOnly(required.concat(optional));
+    }
     function text(s, max) {
       return s is string && s.size() > 0 && s.size() <= max;
     }
@@ -36,9 +41,11 @@ service cloud.firestore {
     match /requests/{id} {
       allow read: if true;
       allow create: if id.matches('R-[0-9]+')
-        && exactly(['id', 'customer', 'region', 'useCase', 'volumeKg', 'frequency', 'priceOffered', 'status', 'createdAt'])
+        // address is optional so the seeded demo requests (which have none) still load.
+        && allowed(['id', 'customer', 'region', 'useCase', 'volumeKg', 'frequency', 'priceOffered', 'status', 'createdAt'], ['address'])
         && request.resource.data.id == id
         && text(request.resource.data.customer, 120)
+        && (!('address' in request.resource.data) || text(request.resource.data.address, 300))
         && region(request.resource.data.region)
         && text(request.resource.data.useCase, 1000)
         && amount(request.resource.data.volumeKg)
@@ -68,11 +75,11 @@ service cloud.firestore {
     match /collections/{id} {
       allow read: if true;
       allow create: if id.matches('C-[0-9]+')
-        && exactly(['id', 'region', 'kg', 'staff', 'collectedAt'])
+        && exactly(['id', 'region', 'address', 'kg', 'collectedAt'])
         && request.resource.data.id == id
         && region(request.resource.data.region)
         && amount(request.resource.data.kg)
-        && text(request.resource.data.staff, 120)
+        && text(request.resource.data.address, 300)
         && request.resource.data.collectedAt is int;
       allow update, delete: if false;
     }
