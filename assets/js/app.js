@@ -141,6 +141,21 @@ const CBUI = (function () {
     });
   }
 
+  // The role comes from the email, not from which login page was used, so
+  // typing a partner email on the staff page still lands in the partner portal.
+  const STAFF_EMAILS = ["admin@gmail.com"];
+
+  function roleForEmail(email) {
+    return STAFF_EMAILS.includes(email.toLowerCase()) ? "admin" : "customer";
+  }
+
+  // Both login pages sit one folder deep, so ../<role>/home.html works from either.
+  function loginAndRedirect(email) {
+    const role = roleForEmail(email);
+    login(role, email);
+    window.location.href = `../${role}/home.html`;
+  }
+
   function logout(role) {
     CB.setState((s) => {
       s.auth[role] = null;
@@ -333,5 +348,5 @@ const CBUI = (function () {
       </div>`;
   }
 
-  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, logout, toast, regionOptions, barChart, aiGenerator, greenLedger, esc };
+  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, loginAndRedirect, logout, toast, regionOptions, barChart, aiGenerator, greenLedger, esc };
 })();
