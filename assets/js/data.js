@@ -104,6 +104,48 @@ const CB = (function () {
       // Customer requests (off-taker "submit this week's request" tickets)
       requests: [
         {
+          id: "R-110", customer: "Woodlands Primary School Eco Club", region: "north",
+          address: "10 Woodlands Dr 50, Singapore 738853",
+          useCase: "Worm farm feed and science lesson demos", volumeKg: 1.0,
+          frequency: "Fortnightly", priceOffered: 0, status: "pending",
+          createdAt: now - 0.2 * day,
+        },
+        {
+          id: "R-109", customer: "Sentosa Golf Club", region: "south",
+          address: "27 Bukit Manis Rd, Singapore 099892",
+          useCase: "Soil amendment trial on practice greens", volumeKg: 8.0,
+          frequency: "One-off", priceOffered: 20, status: "pending",
+          createdAt: now - 0.8 * day,
+        },
+        {
+          id: "R-108", customer: "Pasir Ris Green Residents' Network", region: "east",
+          address: "Blk 571 Pasir Ris St 53, Singapore 510571",
+          useCase: "Community compost bins for HDB rooftop garden", volumeKg: 2.0,
+          frequency: "Weekly", priceOffered: 0, status: "pending",
+          createdAt: now - 1.4 * day,
+        },
+        {
+          id: "R-107", customer: "Grounded Bakes", region: "west",
+          address: "Blk 135 Jurong Gateway Rd, #01-317, Singapore 600135",
+          useCase: "Coffee-ground body scrubs for weekend market stall", volumeKg: 1.5,
+          frequency: "Weekly", priceOffered: 5, status: "pending",
+          createdAt: now - 2.3 * day,
+        },
+        {
+          id: "R-106", customer: "Nanyang Polytechnic", region: "north",
+          address: "180 Ang Mo Kio Ave 8, Singapore 569830",
+          useCase: "Student project on coffee-ground mushroom substrate", volumeKg: 4.0,
+          frequency: "One-off", priceOffered: 0, status: "pending",
+          createdAt: now - 3.2 * day,
+        },
+        {
+          id: "R-105", customer: "Bishan-Ang Mo Kio Park Allotments", region: "central",
+          address: "1384 Ang Mo Kio Ave 1, Singapore 569931",
+          useCase: "Mixing into compost for allotment plots", volumeKg: 3.0,
+          frequency: "Fortnightly", priceOffered: 0, status: "pending",
+          createdAt: now - 4.1 * day,
+        },
+        {
           id: "R-104", customer: "Simei RC Community Garden", region: "east",
           useCase: "Composting for raised garden beds, weekly", volumeKg: 2.5,
           frequency: "Weekly", priceOffered: 0, status: "pending",
