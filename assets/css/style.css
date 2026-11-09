@@ -244,6 +244,18 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
 .bar-track{background:var(--sand);border:1.5px solid var(--line);border-radius:999px;height:12px;overflow:hidden;}
 .bar-fill{background:var(--caramel);height:100%;border-radius:999px;border-right:1.5px solid var(--ink);}
 
+/* ---------- collection map ---------- */
+.site-map{height:360px;border:2px solid var(--edge);border-radius:var(--radius-sm);overflow:hidden;background:var(--sand);z-index:0;}
+.leaflet-tooltip.cb-tip{
+  font-family:var(--font-body);font-size:.82rem;line-height:1.45;color:var(--ink-soft);
+  background:var(--paper);border:2px solid var(--edge);border-radius:12px;box-shadow:3px 3px 0 var(--latte);padding:8px 12px;
+}
+.leaflet-tooltip.cb-tip strong{display:block;color:var(--ink);font-size:.9rem;}
+.cb-tip .tip-big{font-family:var(--font-display);font-size:1.5rem;color:var(--ink);letter-spacing:.02em;margin:2px 0;}
+.cb-tip .tip-big span{font-family:var(--font-body);font-size:.8rem;color:var(--ink-soft);letter-spacing:0;}
+.leaflet-tooltip-left.cb-tip::before{border-left-color:var(--edge);}
+.leaflet-tooltip-right.cb-tip::before{border-right-color:var(--edge);}
+
 /* ---------- charts ---------- */
 .chart-label{font-family:var(--font-body);font-size:12px;font-weight:600;fill:var(--ink-soft);}
 

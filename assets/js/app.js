@@ -354,7 +354,73 @@ const CBUI = (function () {
     });
   }
 
-  // Running total of every AI generation's EcoLogits footprint in this browser.
+  /* ---------- collection map (Leaflet + Esri light grey tiles) ---------- */
+  // Approximate coordinates of each region's collection site, keyed by
+  // region id (regions themselves can be edited in Firestore).
+  const SITE_COORDS = {
+    north:   [1.4343, 103.7932], // Woodlands 11, 11 Woodlands Close
+    east:    [1.3555, 103.9894], // Changi Airport Terminal 2
+    west:    [1.3387, 103.7066], // SAFRA Jurong, 333 Boon Lay Way
+    central: [1.3013, 103.8364], // SkyPark by Kiztopia, Orchard Cineleisure
+  };
+  const OFFICE_COORDS = [1.3313, 103.8655]; // 8 Lor Bakar Batu
+
+  // Draws one marker per collection site, sized by the wet kg collected
+  // there; hovering (or tapping) shows the site's figures.
+  // Returns { map, weekTotal }, or null if Leaflet didn't load.
+  function collectionMap(container) {
+    const el = typeof container === "string" ? document.querySelector(container) : container;
+    if (!el) return null;
+    if (typeof L === "undefined") {
+      el.innerHTML = '<div class="empty-note">The map couldn&#39;t load. Check your connection.</div>';
+      return null;
+    }
+    const state = CB.getState();
+    const weekAgo = Date.now() - 7 * 86400000;
+    const kg = (n) => (n === 0 ? "0" : n < 1 ? n.toFixed(2) : n.toFixed(1)) + " kg";
+    const sites = CB.COLLECTABLE.filter((r) => SITE_COORDS[r.id]).map((r) => {
+      const mine = state.collections.filter((c) => c.region === r.id);
+      const week = mine.filter((c) => c.collectedAt >= weekAgo).reduce((a, c) => a + c.kg, 0);
+      const total = mine.reduce((a, c) => a + c.kg, 0);
+      const last = mine.reduce((a, c) => Math.max(a, c.collectedAt), 0);
+      return { r, week, total, count: mine.length, last };
+    });
+    const maxTotal = Math.max(...sites.map((s) => s.total), 0.1);
+
+    const map = L.map(el, { scrollWheelZoom: false }).setView([1.352, 103.82], 11);
+    // Esri's tiles need no API key, so the map also works when the page is opened as a file.
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 16, attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    // "auto" opens the card on whichever side of the marker has room.
+    const tip = { className: "cb-tip", direction: "auto" };
+    sites.forEach((s) => {
+      L.circleMarker(SITE_COORDS[s.r.id], {
+        radius: 9 + 16 * Math.sqrt(s.total / maxTotal),
+        color: css("--ink"), weight: 2,
+        fillColor: s.total ? css("--caramel") : css("--line"), fillOpacity: 0.85,
+      }).addTo(map).bindTooltip(`
+        <strong>${esc(s.r.name)} · ${esc(s.r.location)}</strong>
+        <div class="tip-big">${kg(s.total)} <span>wet grounds collected</span></div>
+        <div>≈ ${kg(CB.dryKg(s.total))} once dried · ${s.count} collection${s.count === 1 ? "" : "s"} logged</div>
+        <div>This week: ${s.week ? kg(s.week) : "nothing yet"}</div>
+        <div>${s.last ? "Last collected " + CB.fmtDate(s.last) : "No collections logged yet"}</div>`, tip);
+    });
+
+    L.circleMarker(OFFICE_COORDS, { radius: 8, color: css("--paper"), weight: 2, fillColor: css("--kpi-bg"), fillOpacity: 1 })
+      .addTo(map).bindTooltip(`
+        <strong>${esc(CB.PICKUP_POINT.name)}</strong>
+        <div>${esc(CB.PICKUP_POINT.address)}</div>
+        <div>Grounds are dried here, and partners pick them up here.</div>`, tip);
+
+    map.fitBounds([...sites.map((s) => SITE_COORDS[s.r.id]), OFFICE_COORDS], { padding: [36, 36] });
+    const sum = (key) => sites.reduce((a, s) => a + s[key], 0);
+    return { map, weekTotal: `${kg(sum("total"))} collected · ${kg(sum("week"))} this week` };
+  }
+
+  // Total of every staff member's AI generations and their EcoLogits footprint.
   function greenLedger(container) {
     const el = typeof container === "string" ? document.querySelector(container) : container;
     if (!el) return;
@@ -377,5 +443,5 @@ const CBUI = (function () {
       </div>`;
   }
 
-  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, loginAndRedirect, logout, toast, tabs, regionOptions, barChart, aiGenerator, greenLedger, esc };
+  return { icon, doodle, mark, topbar, footer, mount, requireAuth, login, loginAndRedirect, logout, toast, tabs, regionOptions, barChart, collectionMap, aiGenerator, greenLedger, esc };
 })();

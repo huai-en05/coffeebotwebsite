@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Overview — CoffeeBot Admin</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
@@ -37,18 +38,23 @@
       <div class="layout-2-1">
         <div class="card">
           <div class="card-head">
-            <h2>Latest customer requests</h2>
-            <a class="subtext link" href="operations.html">View all</a>
+            <h2>Collection map</h2>
+            <span class="subtext" id="mapTotal"></span>
           </div>
-          <div class="row-list" id="latestRequests"></div>
+          <div class="site-map" id="siteMap"></div>
+          <div class="legend">
+            <span><i style="background:var(--caramel);border-radius:50%;"></i>Collection site (bigger = more collected)</span>
+            <span><i style="background:var(--kpi-bg);"></i>CoffeeBot office: drying &amp; pickup</span>
+          </div>
+          <p class="subtext" id="mapNote" style="font-size:.82rem;margin-top:8px;"></p>
         </div>
 
         <aside class="card">
           <div class="card-head">
-            <h2>Collections this week</h2>
-            <span class="subtext">wet kg</span>
+            <h2>Latest requests</h2>
+            <a class="subtext link" href="operations.html">View all</a>
           </div>
-          <div id="regionBars"></div>
+          <div class="row-list" id="latestRequests"></div>
         </aside>
       </div>
     </section>
@@ -61,6 +67,7 @@
   <div id="footMount"></div>
 
   <script src="../assets/js/data.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../assets/js/app.js"></script>
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/weather.js"></script>
@@ -104,22 +111,12 @@
           <span class="pill ${r.status}">${r.status}</span>
         </div>`).join("");
 
-      // kg collected per region over the last 7 days
-      const weekAgo = Date.now() - 7 * 86400000;
-      const byRegion = {};
-      state.collections.filter((c) => c.collectedAt >= weekAgo).forEach((c) => { byRegion[c.region] = (byRegion[c.region] || 0) + c.kg; });
-      const maxKg = Math.max(...Object.values(byRegion), 0.1);
-      document.getElementById("regionBars").innerHTML = CB.COLLECTABLE.map((r) => {
-        const kg = byRegion[r.id] || 0;
-        return `
-          <div class="bar-row">
-            <div class="flex-between"><span>${r.name} <span class="subtext" style="font-size:.78rem;">${r.location}</span></span><strong>${kg ? kg.toFixed(1) + " kg" : "none logged"}</strong></div>
-            <div class="bar-track"><div class="bar-fill" style="width:${Math.round((kg / maxKg) * 100)}%;"></div></div>
-          </div>`;
-      }).join("") + CB.REGIONS.filter((r) => !r.collectable).map((r) =>
-        `<p class="subtext" style="font-size:.82rem;margin-top:12px;">${r.name}: ${r.note}</p>`).join("");
+      const siteMap = CBUI.collectionMap("#siteMap");
+      document.getElementById("mapTotal").textContent = siteMap ? siteMap.weekTotal : "";
+      document.getElementById("mapNote").textContent = CB.REGIONS.filter((r) => !r.collectable).map((r) => `${r.name}: ${r.note}`).join(" ");
 
-      CBUI.tabs();
+      // Leaflet can't size a map inside a hidden tab, so re-measure when it's shown.
+      CBUI.tabs({ onShow: (tab) => { if (tab === "week" && siteMap) siteMap.map.invalidateSize(); } });
     });
   </script>
 </body>
