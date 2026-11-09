@@ -16,7 +16,6 @@
 
 const CBAI = (function () {
   const RESULT_STORAGE = "coffeebot_ai_results_v1";
-  const FOOTPRINT_STORAGE = "coffeebot_ai_footprint_v1";
 
   const round1 = (n) => Math.round(n * 10) / 10;
   const round2 = (n) => Math.round(n * 100) / 100;
@@ -247,7 +246,7 @@ const CBAI = (function () {
     const payload = await res.json();
     if (!payload.ok) throw new Error(payload.error || "Unknown error from the AI endpoint");
     saveResult(task, payload);
-    recordFootprint(payload.footprint);
+    await recordFootprint(task, payload);
     return payload;
   }
 
@@ -408,26 +407,30 @@ const CBAI = (function () {
     return loadResults()[task] || null;
   }
 
-  // Midpoint of each EcoLogits range, summed across generations.
+  // Every staff member's generations, summed. Each run is stored in the
+  // shared aiRuns collection with the midpoint of its EcoLogits ranges.
   function footprintTotals() {
-    const empty = { count: 0, energyWh: 0, gwpG: 0, waterMl: 0 };
-    try {
-      return { ...empty, ...JSON.parse(localStorage.getItem(FOOTPRINT_STORAGE) || "{}") };
-    } catch (e) {
-      return empty;
-    }
+    return (CB.getState().aiRuns || []).reduce((t, r) => ({
+      count: t.count + 1,
+      energyWh: t.energyWh + r.energyWh,
+      gwpG: t.gwpG + r.gwpG,
+      waterMl: t.waterMl + r.waterMl,
+    }), { count: 0, energyWh: 0, gwpG: 0, waterMl: 0 });
   }
-  function recordFootprint(fp) {
+  // A failed save only loses this run from the ledger, so it never blocks the result.
+  async function recordFootprint(task, payload) {
+    const fp = payload.footprint;
     if (!fp) return;
     const mid = (r) => (r.min + r.max) / 2;
-    const t = footprintTotals();
-    t.count += 1;
-    t.energyWh += mid(fp.energyWh);
-    t.gwpG += mid(fp.gwpG);
-    t.waterMl += mid(fp.waterMl);
     try {
-      localStorage.setItem(FOOTPRINT_STORAGE, JSON.stringify(t));
-    } catch (e) {}
+      await CB.addAiRun({
+        task, model: String(payload.model || "gemini"),
+        energyWh: mid(fp.energyWh), gwpG: mid(fp.gwpG), waterMl: mid(fp.waterMl),
+        createdAt: Date.now(),
+      });
+    } catch (e) {
+      console.warn("Couldn't save this AI run to the shared ledger.", e);
+    }
   }
 
   return {

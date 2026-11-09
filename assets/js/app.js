@@ -277,21 +277,26 @@ const CBUI = (function () {
   function aiResultHtml(payload) {
     const r = payload.result || {};
     const when = payload.generatedAt ? CB.fmtDate(new Date(payload.generatedAt).getTime()) : "";
+    // Figures and actions show up front; each figure's note is on hover and,
+    // with the insights, inside the "Why" dropdown.
     const stats = (r.stats || []).map((s) => `
-      <div class="ai-stat ${esc(s.tone)}">
+      <div class="ai-stat ${esc(s.tone)}" title="${esc(s.note)}">
         <div class="ai-stat-lbl">${esc(s.label)}</div>
         <div class="ai-stat-num">${esc(s.value)}</div>
-        <div class="ai-stat-note">${esc(s.note)}</div>
       </div>`).join("");
     const list = (items) => (items || []).map((t) => `<li>${esc(t)}</li>`).join("");
+    const notes = (r.stats || []).filter((s) => s.note).map((s) => `<li><strong>${esc(s.label)}:</strong> ${esc(s.note)}</li>`).join("");
     return `
       ${payload.fallback ? fallbackNoticeHtml(payload.reason) : ""}
-      <p class="ai-headline">${esc(r.headline)}</p>
       <div class="ai-stats">${stats}</div>
-      <div class="ai-columns">
-        <div><h4>What stands out</h4><ul class="ai-list">${list(r.insights)}</ul></div>
-        <div><h4>Next actions</h4><ul class="ai-list actions">${list(r.actions)}</ul></div>
-      </div>
+      <p class="ai-headline">${esc(r.headline)}</p>
+      <h4 class="ai-todo">To do this week</h4>
+      <ul class="ai-list actions">${list(r.actions)}</ul>
+      <details class="ai-more">
+        <summary>Why: what stands out and how the figures were worked out</summary>
+        <ul class="ai-list">${list(r.insights)}</ul>
+        ${notes ? `<ul class="ai-notes">${notes}</ul>` : ""}
+      </details>
       <div class="ai-foot">
         ${footprintHtml(payload.footprint, payload.fallback)}
         <span>Generated ${esc(when)} · ${esc(payload.model || "Gemini")}</span>
@@ -318,7 +323,7 @@ const CBUI = (function () {
         <div class="ai-card-head">
           <div>
             <div class="kicker">AI insights · Gemini</div>
-            <h2>${mark("sparkle")}${esc(title)}</h2>
+            <h2>${esc(title)}</h2>
           </div>
           <button class="btn-primary" type="button">${esc(buttonLabel)}</button>
         </div>
@@ -357,7 +362,8 @@ const CBUI = (function () {
     const savedKg = CB.getState().partners.reduce((a, p) => a + p.co2eKg, 0);
     const ratio = t.gwpG > 0 ? Math.round((savedKg * 1000) / t.gwpG) : 0;
     el.innerHTML = `
-      <div class="card">
+      <div class="card ledger-card">
+        <div class="kicker">AI footprint · EcoLogits</div>
         <h2>Green AI ledger</h2>
         <div class="ledger">
           <div><div class="num">${t.count}</div><div class="lbl">AI generations</div></div>

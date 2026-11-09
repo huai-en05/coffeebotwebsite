@@ -27,6 +27,9 @@ const CB = (function () {
   ];
   const COLLECTABLE = REGIONS.filter((r) => r.collectable);
 
+  // Partners pick up dried grounds from CoffeeBot's office, whatever their region.
+  const PICKUP_POINT = { name: "CoffeeBot office", address: "8 Lor Bakar Batu, #05-01, Singapore 348743" };
+
   // Regions and assumptions below are the defaults and the seed for
   // Firestore's `regions` and `assumptions` collections. Once the cloud
   // copy loads, applySettings() swaps it in place, so edits made in the
@@ -135,6 +138,10 @@ const CB = (function () {
 
       // Historical waste-diverted-by-day, last 14 days (kg) — for charts
       wasteHistory: buildWasteHistory(now, day),
+
+      // One record per AI generation with its EcoLogits footprint, shared so
+      // the Green AI ledger totals every staff member's runs.
+      aiRuns: [],
 
       // Collections uploaded by admin staff (from "no tracking system — collected when staff services machines").
       // Wet kg, roughly one week of each site's output. North's last round is
@@ -253,6 +260,8 @@ const CB = (function () {
     // Settings: regions in display order, and one "current" assumptions doc.
     regions:      { order: (a, b) => a.order - b.order },
     assumptions:  { order: () => 0 },
+    // Starts empty (no seed), so an empty collection is normal.
+    aiRuns:       { prefix: "A", order: newestFirst("createdAt"), seed: false },
   };
   const ordered = (coll, list) => {
     const sorted = [...list].sort(CLOUD[coll].order);
@@ -341,7 +350,7 @@ const CB = (function () {
     const names = Object.keys(CLOUD);
     const results = await Promise.allSettled(names.map(fetchCollection));
     if (results.every((r) => r.status === "rejected")) throw results[0].reason;
-    const empty = names.filter((_, i) => results[i].status === "fulfilled" && results[i].value.length === 0);
+    const empty = names.filter((coll, i) => CLOUD[coll].seed !== false && results[i].status === "fulfilled" && results[i].value.length === 0);
     if (!seeded && empty.length) {
       await seedCloud(empty);
       return pull(true);
@@ -425,7 +434,7 @@ const CB = (function () {
   }
 
   return {
-    REGIONS, COLLECTABLE, ASSUMPTIONS,
+    REGIONS, COLLECTABLE, PICKUP_POINT, ASSUMPTIONS,
     get DRY_RATIO() { return DRY_RATIO; },
     regionById, monthlyGroundsKg, dailyGroundsKg, dryKg,
     getState, setState, resetDemoData,
@@ -433,6 +442,7 @@ const CB = (function () {
     ready, setRequestStatus,
     addRequest: (fields) => addRecord("requests", fields),
     addUsageLog: (fields) => addRecord("usageLogs", fields),
+    addAiRun: (fields) => addRecord("aiRuns", fields),
     // A collection also adds its weight to the waste-by-day history.
     addCollection: (fields) => addRecord("collections", fields,
       (rec) => [["wasteHistory", wasteEntry(rec.collectedAt, rec.kg)]]),

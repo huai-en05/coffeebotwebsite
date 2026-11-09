@@ -100,18 +100,26 @@ const CBAlerts = (function () {
     refresh();
   }
 
+  // Alerts show just their headline; tapping one opens the details.
+  // Ids of opened alerts survive re-renders (data syncs, weather loads).
+  const opened = new Set();
+
   function itemHtml(a) {
     return `
       <li class="alert-item">
-        <span class="alert-icon">${CBUI.icon(a.icon)}</span>
-        <div class="alert-text">
-          <strong>${CBUI.esc(a.title)}</strong>
-          <p>${CBUI.esc(a.body)}</p>
-          <div class="alert-actions">
-            <a class="link" href="${a.action.href}">${CBUI.esc(a.action.label)}</a>
-            <button type="button" data-hide="${a.id}">Hide for today</button>
+        <details data-alert="${a.id}" ${opened.has(a.id) ? "open" : ""}>
+          <summary>
+            <span class="alert-icon">${CBUI.icon(a.icon)}</span>
+            <strong>${CBUI.esc(a.title)}</strong>
+          </summary>
+          <div class="alert-text">
+            <p>${CBUI.esc(a.body)}</p>
+            <div class="alert-actions">
+              <a class="link" href="${a.action.href}">${CBUI.esc(a.action.label)}</a>
+              <button type="button" data-hide="${a.id}">Hide for today</button>
+            </div>
           </div>
-        </div>
+        </details>
       </li>`;
   }
 
@@ -123,6 +131,9 @@ const CBAlerts = (function () {
 
   function wireHide(root) {
     root.querySelectorAll("[data-hide]").forEach((b) => b.addEventListener("click", () => hide(b.dataset.hide)));
+    root.querySelectorAll("details[data-alert]").forEach((d) => d.addEventListener("toggle", () => {
+      if (d.open) opened.add(d.dataset.alert); else opened.delete(d.dataset.alert);
+    }));
   }
 
   function renderBell(el) {

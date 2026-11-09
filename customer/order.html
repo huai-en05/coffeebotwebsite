@@ -20,7 +20,7 @@
       <button type="button" class="tab" role="tab" data-tab="usage">Log usage</button>
     </div>
 
-    <section data-panel="request" class="layout-1-1">
+    <section data-panel="request" class="form-narrow">
       <div class="card" id="requestCard">
         <div class="card-head">
           <h2>This week's request</h2>
@@ -72,10 +72,6 @@
         </form>
       </div>
 
-      <div class="card">
-        <div class="card-head"><h2>Your requests</h2></div>
-        <div class="row-list" id="myRequests"></div>
-      </div>
     </section>
 
     <section data-panel="usage" class="layout-1-1">
@@ -126,21 +122,6 @@
       }
       renderTicketNo();
 
-      function renderRequests() {
-        const state = CB.getState();
-        const mine = state.requests.filter((r) => r.customer === MY_NAME);
-        const list = document.getElementById("myRequests");
-        list.innerHTML = mine.length
-          ? mine.map((r) => `
-            <div class="row">
-              <div class="row-main">
-                <div class="title">${r.useCase}</div>
-                <div class="meta">${r.volumeKg} kg · ${r.frequency.toLowerCase()} · ${CB.regionName(r.region)} · ${CB.fmtDate(r.createdAt)}</div>
-              </div>
-              <span class="pill ${r.status}">${r.status}</span>
-            </div>`).join("")
-          : '<div class="empty-note">No requests submitted yet.</div>';
-      }
       function renderUsage() {
         const state = CB.getState();
         const mine = state.usageLogs.filter((u) => u.customer === MY_NAME);
@@ -155,7 +136,6 @@
             </div>`).join("")
           : '<div class="empty-note">No usage logged yet.</div>';
       }
-      renderRequests();
       renderUsage();
 
       document.getElementById("requestForm").addEventListener("submit", function (e) {
@@ -174,11 +154,10 @@
           customer: name, region, address, useCase, volumeKg, frequency, priceOffered,
           status: "pending", createdAt: Date.now(),
         }).then(() => {
-          CBUI.toast("Request submitted.");
+          CBUI.toast("Request submitted. Track it on your Home page.");
           document.getElementById("requestForm").reset();
           document.getElementById("rName").value = MY_NAME;
           document.getElementById("rRegion").value = MY_REGION;
-          renderRequests();
           renderTicketNo();
         }).catch((err) => CBUI.toast("Couldn't submit request: " + err.message))
           .finally(() => { if (btn) btn.disabled = false; });
@@ -201,7 +180,7 @@
       });
 
       // Status changes made by staff elsewhere show up when you return to the tab.
-      document.addEventListener("cb:synced", () => { renderRequests(); renderUsage(); renderTicketNo(); });
+      document.addEventListener("cb:synced", () => { renderUsage(); renderTicketNo(); });
 
       CBUI.tabs();
     });

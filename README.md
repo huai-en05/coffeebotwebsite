@@ -118,8 +118,9 @@ estimator. It returns ranges for electricity (Wh), emissions (g CO₂e) and
 water (mL). The site shows:
 
 - a footprint line under every generated result, and
-- a **Green AI ledger** on the admin Overview that totals all generations
-  and compares them with the CO₂e the programme has saved.
+- a **Green AI ledger** on the admin Overview that totals every staff
+  member's generations (each run is saved to the shared `aiRuns` collection
+  in Firestore) and compares them with the CO₂e the programme has saved.
 
 EcoLogits uses a world-average electricity mix, since Google doesn't
 publish which data centre served a request. If EcoLogits is unreachable,

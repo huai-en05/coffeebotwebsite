@@ -21,9 +21,9 @@
 
     <div class="kpis">
       <div class="kpi"><div class="num" id="statKg">—</div><div class="lbl">Grounds diverted to date</div></div>
-      <div class="kpi"><div class="num green" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
-      <div class="kpi"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
-      <div class="kpi"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
+      <div class="kpi eco"><div class="num" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
+      <div class="kpi act"><div class="num" id="statPending">—</div><div class="lbl">Pending requests</div></div>
+      <div class="kpi info"><div class="num" id="statPartners">—</div><div class="lbl">Active off-takers</div></div>
     </div>
 
     <div class="tabs" role="tablist">
@@ -90,6 +90,8 @@
         onGenerated: () => CBUI.greenLedger("#ledgerMount"),
       });
       CBUI.greenLedger("#ledgerMount");
+      // Runs other staff generated show up when you come back to the tab.
+      document.addEventListener("cb:synced", () => CBUI.greenLedger("#ledgerMount"));
 
       const latest = [...state.requests].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
       document.getElementById("latestRequests").innerHTML = latest.map((r) => `

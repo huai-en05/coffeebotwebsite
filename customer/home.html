@@ -21,8 +21,8 @@
 
     <div class="kpis">
       <div class="kpi"><div class="num" id="statTotalKg">—</div><div class="lbl">Grounds received to date</div></div>
-      <div class="kpi"><div class="num green" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
-      <div class="kpi"><div class="num amber" id="statPending">—</div><div class="lbl">Pending requests</div></div>
+      <div class="kpi eco"><div class="num" id="statCo2">—</div><div class="lbl">CO₂e saved (est.)</div></div>
+      <div class="kpi act"><div class="num" id="statPending">—</div><div class="lbl">Pending requests</div></div>
     </div>
 
     <div class="layout-2-1">
@@ -37,7 +37,7 @@
       <aside class="card">
         <div class="card-head">
           <h2>Collection point</h2>
-          <span class="pill region" id="regionPill"></span>
+          <span class="pill region">Pickup</span>
         </div>
         <h3 id="siteName"></h3>
         <p class="subtext" id="siteMeta" style="margin-top:6px;"></p>
@@ -68,11 +68,8 @@
       document.getElementById("statCo2").textContent = "~" + (myPartner ? myPartner.co2eKg : 0).toFixed(1) + " kg";
       document.getElementById("statPending").textContent = mine.filter((r) => r.status === "pending").length;
 
-      const region = CB.regionById(myPartner ? myPartner.region : "east");
-      document.getElementById("regionPill").textContent = region.name;
-      document.getElementById("siteName").textContent = region.location;
-      document.getElementById("siteMeta").textContent =
-        `~${region.cupsPerMonth.toLocaleString("en-SG")} cups a month · about ${CB.monthlyGroundsKg(region).toFixed(1)} kg of wet grounds, ~${CB.dryKg(CB.monthlyGroundsKg(region)).toFixed(1)} kg once dried`;
+      document.getElementById("siteName").textContent = CB.PICKUP_POINT.name;
+      document.getElementById("siteMeta").textContent = CB.PICKUP_POINT.address;
 
       const list = document.getElementById("recentRequests");
       if (mine.length === 0) {

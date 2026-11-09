@@ -144,6 +144,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // One record per AI generation with its EcoLogits footprint (midpoints),
+    // so the Green AI ledger can total runs across all staff.
+    match /aiRuns/{id} {
+      allow read: if true;
+      allow create: if id.matches('A-[0-9]+')
+        && exactly(['id', 'task', 'model', 'energyWh', 'gwpG', 'waterMl', 'createdAt'])
+        && request.resource.data.id == id
+        && request.resource.data.task in ['briefing', 'forecast', 'allocation']
+        && text(request.resource.data.model, 80)
+        && amount(request.resource.data.energyWh)
+        && amount(request.resource.data.gwpG)
+        && amount(request.resource.data.waterMl)
+        && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+
     // Everything else is closed.
     match /{document=**} {
       allow read, write: if false;

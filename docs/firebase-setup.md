@@ -1,7 +1,7 @@
 # Setting up Firestore for shared data
 
-Requests, usage logs, collections, partners and the waste-by-day history
-are stored in Cloud Firestore, so a
+Requests, usage logs, collections, partners, the waste-by-day history and
+each AI generation's footprint (`aiRuns`) are stored in Cloud Firestore, so a
 request a partner submits shows up for staff on any device. The site uses
 Firestore's REST API directly, with no Firebase SDK and no API key. Access
 is controlled by the security rules in [`firestore.rules`](../firestore.rules).
