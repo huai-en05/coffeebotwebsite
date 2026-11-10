@@ -262,6 +262,8 @@ table.data-table tr:has(+ .alloc-reason-row) td{border-bottom:none;padding-botto
 
 /* ---------- collection map ---------- */
 .site-map{height:360px;border:2px solid var(--edge);border-radius:var(--radius-sm);overflow:hidden;background:var(--sand);z-index:0;}
+/* OpenStreetMap tiles are colourful; grey them to a light base map. */
+.site-map .leaflet-tile-pane{filter:grayscale(1) contrast(.85) brightness(1.08);}
 .leaflet-tooltip.cb-tip{
   font-family:var(--font-body);font-size:.82rem;line-height:1.45;color:var(--ink-soft);
   background:var(--paper);border:2px solid var(--edge);border-radius:12px;box-shadow:3px 3px 0 var(--latte);padding:8px 12px;

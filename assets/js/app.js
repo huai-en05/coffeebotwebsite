@@ -354,7 +354,7 @@ const CBUI = (function () {
     });
   }
 
-  /* ---------- collection map (Leaflet + Esri light grey tiles) ---------- */
+  /* ---------- collection map (Leaflet + OpenStreetMap tiles, greyed) ---------- */
   // Approximate coordinates of each region's collection site, keyed by
   // region id (regions themselves can be edited in Firestore).
   const SITE_COORDS = {
@@ -388,19 +388,12 @@ const CBUI = (function () {
     const maxTotal = Math.max(...sites.map((s) => s.total), 0.1);
 
     const map = L.map(el, { scrollWheelZoom: false }).setView([1.352, 103.82], 11);
-    // Esri's tiles need no API key, so the map also works when the page is opened as a file.
-    // Some browsers and ad blockers block Esri, so on the first failed tile
-    // the background switches to CARTO's light map instead.
-    const esri = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 16, attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors",
+    // OpenStreetMap's own tiles need no API key and load from any domain
+    // (Esri's server refuses requests and CARTO's needs a key off localhost).
+    // .site-map greys them out in CSS to keep the light map look.
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 16, attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
     }).addTo(map);
-    esri.once("tileerror", () => {
-      map.removeLayer(esri);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        maxZoom: 16, subdomains: "abcd",
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-      }).addTo(map);
-    });
 
     const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     // "auto" opens the card on whichever side of the marker has room.
