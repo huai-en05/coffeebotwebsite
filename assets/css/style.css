@@ -243,6 +243,15 @@ table.data-table td.num,table.data-table th.num{text-align:right;font-variant-nu
 .alloc-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .alloc-edit{display:flex;align-items:center;justify-content:flex-end;gap:4px;}
 .alloc-edit input{width:72px;padding:4px 6px;border:2px solid var(--caramel);border-radius:8px;font:inherit;text-align:right;}
+table.data-table tr:has(+ .alloc-reason-row) td{border-bottom:none;padding-bottom:4px;}
+.alloc-reason-row td{padding-top:0;font-size:.82rem;}
+.alloc-reason{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.alloc-reason label{font-weight:800;color:var(--ink);}
+.weight-suggestion{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--warn-bg);border:2px solid var(--caramel);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;
+}
+.alloc-reason input{flex:1 1 220px;padding:6px 10px;border:2px solid var(--caramel);border-radius:8px;font:inherit;}
 
 /* ---------- region bars ---------- */
 .bar-row{margin-bottom:14px;}

@@ -78,6 +78,20 @@ const RESPONSE_SCHEMA = {
         required: ["requestId", "category", "communityBenefit", "reason"],
       },
     },
+    // Allocation only: changes to purpose points learned from staff overrides.
+    // Staff apply or dismiss each one on the site.
+    weightSuggestions: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          purposeId: { type: "STRING" },
+          suggestedPoints: { type: "INTEGER" },
+          reason: { type: "STRING" },
+        },
+        required: ["purposeId", "suggestedPoints", "reason"],
+      },
+    },
   },
   required: ["headline", "stats", "insights", "actions"],
 };
@@ -139,6 +153,16 @@ const TASKS = {
       "in score order from one pool: the week's dry-ready (dried, weather-adjusted) supply, since",
       "every partner collects from CoffeeBot's office. Point out partial or unfulfilled requests,",
       "leftover or short supply, staff-edited amounts, and any request worth a second look.",
+      "recentStaffOverrides lists staff's latest edits and rejections with their reasons. If they show",
+      "a pattern (e.g. one purpose or partner keeps being cut), say so. Use the reasons as precedent",
+      "when judging similar requests this week, including in purposeReviews.",
+      "",
+      "Learn from the overrides in weightSuggestions. currentPurposeWeights gives the points each",
+      "purpose adds to a request's score now. Only when at least 2 overrides point the same way for",
+      "one purpose (e.g. staff keep cutting or rejecting business requests, or keep giving compost",
+      "requests more), suggest new points for it: an integer from 0 to 20, moved a few points at a time.",
+      "Cite the overrides in the reason, in one sentence. Leave weightSuggestions out if no pattern",
+      "is that clear. Staff decide whether to apply each suggestion.",
       "",
       "Also fill purposeReviews: one entry for each request in purposesToReview. Set category to the",
       "id of the closest entry in purposeCategories, or 'other' if none fits. Rate communityBenefit:",

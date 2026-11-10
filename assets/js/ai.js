@@ -115,20 +115,34 @@ const CBAI = (function () {
   //   ai       — Gemini sorted an "Others" or older free-text request
   //   keywords — sorted by keywords in the free text, until Gemini has looked
   //   review   — couldn't be sorted, so staff should check it
+  // Points come from CB.purposePoints(), which includes what the scoring has
+  // learned from staff overrides.
   function purposeFor(req, reviews) {
     const picked = req.purpose !== "other" && CB.purposeById(req.purpose);
-    if (picked) return { purpose: picked, source: "partner", points: picked.points };
+    if (picked) return { purpose: picked, source: "partner", points: CB.purposePoints(picked.id) };
     const ai = reviews[req.id];
     const aiPurpose = ai && CB.purposeById(ai.category);
     if (aiPurpose) {
       return {
         purpose: aiPurpose, source: "ai", benefit: ai.communityBenefit, reason: ai.reason,
-        points: round1(aiPurpose.points * (BENEFIT_WEIGHT[ai.communityBenefit] ?? 1)),
+        points: round1(CB.purposePoints(aiPurpose.id) * (BENEFIT_WEIGHT[ai.communityBenefit] ?? 1)),
       };
     }
     const guess = CB.guessPurpose(req.purposeNote || req.useCase);
-    if (guess) return { purpose: guess, source: "keywords", points: guess.points };
-    return { purpose: CB.purposeById("other"), source: "review", points: 0 };
+    if (guess) return { purpose: guess, source: "keywords", points: CB.purposePoints(guess.id) };
+    return { purpose: CB.purposeById("other"), source: "review", points: CB.purposePoints("other") };
+  }
+
+  // Points Gemini's latest allocation review suggests changing, from the
+  // override log. Staff apply or dismiss each one on the Allocation page;
+  // nothing changes the scoring until they do. Suggestions already applied
+  // are dropped, and points stay within 0–20.
+  function weightSuggestions() {
+    const last = lastResult("allocation");
+    return ((last && last.result && last.result.weightSuggestions) || [])
+      .filter((s) => CB.purposeById(s.purposeId) && Number.isFinite(s.suggestedPoints))
+      .map((s) => ({ ...s, suggestedPoints: Math.max(0, Math.min(20, Math.round(s.suggestedPoints))) }))
+      .filter((s) => s.suggestedPoints !== CB.purposePoints(s.purposeId));
   }
 
   function scoreRequest(req, purposeInfo = purposeFor(req, aiPurposeReviews())) {
@@ -144,9 +158,10 @@ const CBAI = (function () {
     return Math.round(score * 10) / 10;
   }
 
-  // Amounts staff typed in on the Allocation page, by request id. They stay
-  // in this browser until the request is approved or rejected.
-  const EDIT_STORAGE = "coffeebot_alloc_edits_v1";
+  // Amounts staff typed in on the Allocation page, with their reason, by
+  // request id ({ kg, reason }). They stay in this browser until the request
+  // is approved, when the change and its reason go into the shared log.
+  const EDIT_STORAGE = "coffeebot_alloc_edits_v2";
   function allocationEdits() {
     try {
       return JSON.parse(localStorage.getItem(EDIT_STORAGE) || "{}");
@@ -155,10 +170,10 @@ const CBAI = (function () {
     }
   }
   // Pass null to drop the edit and go back to the recommendation.
-  function setAllocationEdit(id, kg) {
+  function setAllocationEdit(id, kg, reason) {
     const all = allocationEdits();
     if (kg === null) delete all[id];
-    else all[id] = kg;
+    else all[id] = { kg, reason };
     try {
       localStorage.setItem(EDIT_STORAGE, JSON.stringify(all));
     } catch (e) {}
@@ -184,15 +199,19 @@ const CBAI = (function () {
 
     let remaining = supply;
     const decisions = ranked.map((r) => {
+      // What the rules alone would give, kept so an edit can be logged against it.
+      const ruleKg = Math.min(r.volumeKg, Math.max(0, remaining));
       // A staff edit wins, even past the forecast: they may know of stock on hand.
-      const edited = r.id in edits;
-      const allocate = edited ? edits[r.id] : Math.min(r.volumeKg, Math.max(0, remaining));
+      const edit = edits[r.id];
+      const allocate = edit ? edit.kg : ruleKg;
       remaining -= allocate;
       return {
         ...r,
         recommendedKg: round2(allocate),
+        ruleKg: round2(ruleKg),
         fulfilled: allocate >= r.volumeKg - 0.01,
-        edited,
+        edited: !!edit,
+        editReason: edit ? edit.reason : "",
         needsReview: r.purposeInfo.purpose.id === "other",
       };
     });
@@ -248,6 +267,7 @@ const CBAI = (function () {
         requestedKg: d.volumeKg,
         recommendedKg: d.recommendedKg,
         editedByStaff: d.edited,
+        ...(d.edited ? { ruleRecommendedKg: d.ruleKg, staffEditReason: d.editReason } : {}),
         fullyFulfilled: d.fulfilled,
         score: d.score,
       })),
@@ -255,10 +275,22 @@ const CBAI = (function () {
       leftoverSupplyKg: round1(remainingSupply),
       // Requests that didn't pick a category (or predate the list) for Gemini to sort.
       purposeCategories: CB.PURPOSES.map((p) => ({ id: p.id, label: p.label })),
+      // What each purpose adds to the score now, and the starting value.
+      currentPurposeWeights: CB.PURPOSES.map((p) => ({ purposeId: p.id, points: CB.purposePoints(p.id), defaultPoints: p.points })),
       purposesToReview: decisions.filter((d) => d.purposeInfo.source !== "partner").map((d) => ({
         requestId: d.id,
         requester: d.customer,
         explanation: d.purposeNote || d.useCase,
+      })),
+      // Staff's latest decisions that differed from the rules, with reasons.
+      recentStaffOverrides: (CB.getState().overrides || []).slice(0, 15).map((o) => ({
+        requester: o.customer,
+        purpose: o.purpose,
+        action: o.action,
+        requestedKg: o.requestedKg,
+        ruleRecommendedKg: o.recommendedKg,
+        staffAllocatedKg: o.allocatedKg,
+        reason: o.reason,
       })),
     };
   }
@@ -508,7 +540,7 @@ const CBAI = (function () {
   return {
     endpoint,
     forecastTotal, forecastByRegion, dryForecastByRegion,
-    scoreRequest, recommendAllocation, setAllocationEdit,
+    scoreRequest, recommendAllocation, setAllocationEdit, weightSuggestions,
     generate, ruleBased, lastResult, footprintTotals,
   };
 })();

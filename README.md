@@ -91,7 +91,17 @@ together:
      every partner collects from the office. It goes to the
      highest-scoring requests first. Staff can edit an amount or reject
      a request before approving, and the approved amount is saved with
-     the request.
+     the request. Each edit or rejection needs a reason. The reasons go
+     into a shared **override log** (the `overrides` collection), shown on
+     the Allocation page and sent to Gemini's allocation review.
+   - *Learned scoring*: from the override log, Gemini suggests new points
+     for a purpose when at least 2 overrides point the same way (for
+     example, staff keep cutting business requests). Staff **Apply** or
+     **Dismiss** each suggestion, so nothing changes without a person. An
+     applied change is added to the shared `weightChanges` log, which
+     every browser's scoring reads. Staff can reset a purpose to its
+     default. Gemini also uses past override reasons as precedent when
+     sorting "Others" requests.
    - *Purpose sorting*: partners pick a purpose from a list. An "Others"
      request (or an older free-text one) is sorted by keywords until
      Gemini's allocation review sorts it and rates its community benefit.

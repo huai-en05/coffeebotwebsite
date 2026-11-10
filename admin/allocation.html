@@ -29,7 +29,7 @@
     <div class="card">
       <div class="card-head">
         <h2>Ranked recommendation</h2>
-        <span class="subtext">Scored on quantity, regularity and purpose. Edit an amount or reject a request before approving.</span>
+        <span class="subtext">Scored on quantity, regularity and purpose. Edit an amount or reject a request, with a reason, before approving.</span>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -37,6 +37,28 @@
             <tr><th>#</th><th>Requester</th><th>Region</th><th class="num">Requested</th><th class="num">Allocate</th><th class="num">Score</th><th></th></tr>
           </thead>
           <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-head">
+        <h2>Override log</h2>
+        <span class="subtext">Approved amounts that differ from the recommendation, and rejections, with staff's reasons</span>
+      </div>
+      <div class="row-list" id="overrideLog"></div>
+    </div>
+
+    <div class="card section-gap">
+      <div class="card-head">
+        <h2>Learned scoring</h2>
+        <span class="subtext">Points each purpose adds to a score. Gemini suggests changes from the override log; staff decide.</span>
+      </div>
+      <div id="weightSuggestions"></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Purpose</th><th class="num">Points</th><th>Last change</th><th></th></tr></thead>
+          <tbody id="weightBody"></tbody>
         </table>
       </div>
     </div>
@@ -60,7 +82,9 @@
 
       const esc = CBUI.esc;
       let result = CBAI.recommendAllocation();
-      let editing = null; // id of the request whose amount is being edited
+      // The row staff are changing: { id, mode: "edit" | "reject" }.
+      let editing = null;
+      const isEditing = (d, mode) => editing && editing.id === d.id && (!mode || editing.mode === mode);
 
       // How the purpose was decided, so staff know which ones to double-check.
       function purposeTags(d) {
@@ -73,18 +97,36 @@
       }
 
       function allocateCell(d) {
-        if (editing === d.id) {
+        if (isEditing(d, "edit")) {
           return `<div class="alloc-edit"><input type="number" id="editKg" min="0" step="0.1" value="${d.recommendedKg}" aria-label="Kilograms to allocate"> kg</div>`;
         }
-        const why = d.edited ? "edited" : d.fulfilled ? "" : d.recommendedKg > 0 ? "partial" : "waitlisted";
+        if (d.edited) {
+          return `${d.recommendedKg} kg<br><span class="alloc-why" title="${esc(d.editReason)}">edited (was ${d.ruleKg} kg)</span>`;
+        }
+        const why = d.fulfilled ? "" : d.recommendedKg > 0 ? "partial" : "waitlisted";
         return `${d.recommendedKg} kg${why ? `<br><span class="alloc-why">${why}</span>` : ""}`;
       }
 
-      function actionButtons(d) {
-        if (editing === d.id) {
-          return `<button class="btn-primary btn-sm" data-save="${d.id}">Save</button>
-            <button class="btn-secondary btn-sm" data-cancel="${d.id}">Cancel</button>`;
+      // Every change to the recommendation needs a reason, which goes into the override log.
+      function reasonRow(d) {
+        if (!isEditing(d)) {
+          return d.edited ? `<tr class="alloc-reason-row"><td></td><td colspan="6" class="subtext">Reason for edit: ${esc(d.editReason)}</td></tr>` : "";
         }
+        const reject = editing.mode === "reject";
+        return `
+          <tr class="alloc-reason-row"><td></td><td colspan="6">
+            <div class="alloc-reason">
+              <label for="editReason">${reject ? `Why reject ${esc(d.customer)}'s request?` : "Why change the amount?"}</label>
+              <input type="text" id="editReason" maxlength="500" value="${reject ? "" : esc(d.editReason)}"
+                placeholder="${reject ? "e.g. Personal use, not for the community" : "e.g. They only have storage for 2 kg"}">
+              <button class="${reject ? "btn-danger" : "btn-primary"} btn-sm" data-${reject ? "confirm-reject" : "save"}="${d.id}">${reject ? "Reject request" : "Save"}</button>
+              <button class="btn-secondary btn-sm" data-cancel="${d.id}">Cancel</button>
+            </div>
+          </td></tr>`;
+      }
+
+      function actionButtons(d) {
+        if (isEditing(d)) return "";
         return `<button class="btn-primary btn-sm" data-approve="${d.id}">Approve</button>
           <button class="btn-secondary btn-sm" data-edit="${d.id}">Edit</button>
           ${d.edited ? `<button class="btn-secondary btn-sm" data-reset="${d.id}" title="Go back to the recommended amount">Reset</button>` : ""}
@@ -113,31 +155,145 @@
               <td class="num" style="font-weight:700;color:${d.fulfilled ? "var(--ok)" : "var(--warn)"};">${allocateCell(d)}</td>
               <td class="num">${d.score}</td>
               <td><div class="alloc-actions">${actionButtons(d)}</div></td>
-            </tr>`;
+            </tr>${reasonRow(d)}`;
           }).join("")
           : `<tr><td colspan="7" class="empty-note" style="text-align:center;padding:24px;">No pending requests — everything's been decided.</td></tr>`;
 
         const on = (attr, fn) => document.querySelectorAll(`[data-${attr}]`).forEach((b) =>
-          b.addEventListener("click", () => fn(decisions.find((d) => d.id === b.dataset[attr]))));
+          b.addEventListener("click", () => fn(decisions.find((d) => d.id === b.getAttribute(`data-${attr}`)))));
+        const open = (d, mode) => { editing = { id: d.id, mode }; render(); };
         on("approve", approveOne);
-        on("reject", rejectOne);
-        on("edit", (d) => { editing = d.id; render(); document.getElementById("editKg")?.select(); });
+        on("edit", (d) => { open(d, "edit"); document.getElementById("editKg")?.select(); });
+        on("reject", (d) => { open(d, "reject"); document.getElementById("editReason")?.focus(); });
         on("cancel", () => { editing = null; render(); });
         on("reset", (d) => { CBAI.setAllocationEdit(d.id, null); render(); });
         on("save", saveEdit);
-        document.getElementById("editKg")?.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") saveEdit(decisions.find((d) => d.id === editing));
+        on("confirm-reject", rejectOne);
+        ["editKg", "editReason"].forEach((id) => document.getElementById(id)?.addEventListener("keydown", (e) => {
+          const d = decisions.find((x) => editing && x.id === editing.id);
+          if (e.key === "Enter") (editing.mode === "reject" ? rejectOne : saveEdit)(d);
           if (e.key === "Escape") { editing = null; render(); }
-        });
+        }));
+
+        renderLog();
+        renderWeights();
+      }
+
+      // Suggestions staff dismissed, as "purposeId:points", so they stay hidden here.
+      const DISMISS_KEY = "coffeebot_weight_dismissed_v1";
+      function dismissed() {
+        try {
+          return JSON.parse(localStorage.getItem(DISMISS_KEY) || "[]");
+        } catch (e) {
+          return [];
+        }
+      }
+      function dismiss(s) {
+        try {
+          localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed(), s.purposeId + ":" + s.suggestedPoints]));
+        } catch (e) {}
+        render();
+      }
+
+      function changeWeight(purposeId, points, reason, source) {
+        CB.addWeightChange({
+          purpose: purposeId, points, previousPoints: CB.purposePoints(purposeId),
+          reason, source, createdAt: Date.now(),
+        }).then(() => {
+          showFeedback(`${esc(CB.purposeById(purposeId).label)} now adds ${points} points. Scores are updated.`);
+          render();
+        }).catch((err) => CBUI.toast("Couldn't change the scoring: " + err.message));
+      }
+
+      function renderWeights() {
+        const hidden = dismissed();
+        const suggestions = CBAI.weightSuggestions().filter((s) => !hidden.includes(s.purposeId + ":" + s.suggestedPoints));
+        document.getElementById("weightSuggestions").innerHTML = suggestions.map((s, i) => {
+          const now = CB.purposePoints(s.purposeId);
+          return `
+            <div class="weight-suggestion">
+              <div>
+                <strong>Gemini suggests ${esc(CB.purposeById(s.purposeId).label)}: ${now} → ${s.suggestedPoints} points</strong>
+                <div class="subtext">${esc(s.reason)}</div>
+              </div>
+              <div class="alloc-actions">
+                <button class="btn-primary btn-sm" data-apply-weight="${i}">Apply</button>
+                <button class="btn-secondary btn-sm" data-dismiss-weight="${i}">Dismiss</button>
+              </div>
+            </div>`;
+        }).join("");
+
+        document.getElementById("weightBody").innerHTML = CB.PURPOSES.map((p) => {
+          const points = CB.purposePoints(p.id);
+          const last = CB.lastWeightChange(p.id);
+          return `
+            <tr>
+              <td>${esc(p.label)}</td>
+              <td class="num"><strong>${points}</strong>${points !== p.points ? `<br><span class="alloc-why">default ${p.points}</span>` : ""}</td>
+              <td class="subtext" style="font-size:.82rem;">${last
+                ? `${last.previousPoints} → ${last.points} · ${last.source === "ai" ? "Gemini suggestion, applied by staff" : "Staff"} · ${CB.fmtDate(last.createdAt)}<br>“${esc(last.reason)}”`
+                : "Default"}</td>
+              <td>${points !== p.points ? `<button class="btn-secondary btn-sm" data-reset-weight="${p.id}">Reset</button>` : ""}</td>
+            </tr>`;
+        }).join("");
+
+        document.querySelectorAll("[data-apply-weight]").forEach((b) => b.addEventListener("click", () => {
+          const s = suggestions[b.dataset.applyWeight];
+          changeWeight(s.purposeId, s.suggestedPoints, s.reason, "ai");
+        }));
+        document.querySelectorAll("[data-dismiss-weight]").forEach((b) => b.addEventListener("click", () => dismiss(suggestions[b.dataset.dismissWeight])));
+        document.querySelectorAll("[data-reset-weight]").forEach((b) => b.addEventListener("click", () => {
+          const p = CB.purposeById(b.dataset.resetWeight);
+          changeWeight(p.id, p.points, "Reset to the default", "staff");
+        }));
+      }
+
+      function reasonValue() {
+        const reason = document.getElementById("editReason").value.trim();
+        if (!reason) {
+          CBUI.toast("Add a reason. It goes into the override log.");
+          document.getElementById("editReason").focus();
+        }
+        return reason;
       }
 
       function saveEdit(d) {
         const kg = parseFloat(document.getElementById("editKg").value);
         if (!(kg >= 0)) return CBUI.toast("Enter an amount of 0 kg or more.");
-        CBAI.setAllocationEdit(d.id, Math.round(kg * 100) / 100);
+        const reason = reasonValue();
+        if (!reason) return;
+        CBAI.setAllocationEdit(d.id, Math.round(kg * 100) / 100, reason);
         editing = null;
         render();
       }
+
+      function renderLog() {
+        const log = (CB.getState().overrides || []).slice(0, 10);
+        document.getElementById("overrideLog").innerHTML = log.length
+          ? log.map((o) => `
+            <div class="row">
+              <div class="row-main">
+                <div class="title">${esc(o.customer)} · ${o.action === "rejected"
+                  ? `rejected (recommended ${o.recommendedKg} kg)`
+                  : `${o.allocatedKg} kg approved, recommended ${o.recommendedKg} kg`}</div>
+                <div class="meta">“${esc(o.reason)}”</div>
+                <div class="meta">${esc(o.purpose)} · ${o.requestedKg} kg requested · ${CB.fmtDate(o.createdAt)}</div>
+              </div>
+              <span class="pill ${o.action === "rejected" ? "declined" : "pending"}">${o.action}</span>
+            </div>`).join("")
+          : '<div class="empty-note">No overrides yet. Edited amounts and rejections show up here once they are approved or rejected.</div>';
+      }
+
+      // One log entry per decision that differed from the rules. Saved one at a
+      // time so each gets its own id.
+      function logOverrides(entries) {
+        return entries.reduce((p, o) => p.then(() => CB.addOverride({ ...o, createdAt: Date.now() })), Promise.resolve());
+      }
+      const overrideEntry = (d, action, allocatedKg, reason) => ({
+        requestId: d.id, customer: d.customer, purpose: d.purposeInfo.purpose.label, action,
+        requestedKg: d.volumeKg, recommendedKg: d.ruleKg, allocatedKg, reason,
+      });
+      const logFailed = (err) => CBUI.toast("Saved, but the override log couldn't be updated: " + err.message);
 
       function showFeedback(msg) {
         const bar = document.getElementById("feedbackBar");
@@ -147,11 +303,16 @@
         setTimeout(() => (bar.style.display = "none"), 4000);
       }
 
-      // Approving saves the amount allocated with the request, so the partner sees it.
+      // Approving saves the amount allocated with the request, so the partner
+      // sees it, and logs any edited amount with its reason.
       function approve(decisions) {
         const ids = decisions.map((d) => d.id);
         const kg = Object.fromEntries(decisions.map((d) => [d.id, d.recommendedKg]));
-        return CB.setRequestStatus(ids, "accepted", kg).then(() => ids.forEach((id) => CBAI.setAllocationEdit(id, null)));
+        return CB.setRequestStatus(ids, "accepted", kg).then(() => {
+          ids.forEach((id) => CBAI.setAllocationEdit(id, null));
+          return logOverrides(decisions.filter((d) => d.edited)
+            .map((d) => overrideEntry(d, "edited", d.recommendedKg, d.editReason))).catch(logFailed);
+        });
       }
 
       function approveOne(d) {
@@ -162,12 +323,14 @@
       }
 
       function rejectOne(d) {
-        if (!confirm(`Reject ${d.customer}'s request for ${d.volumeKg} kg?`)) return;
+        const reason = reasonValue();
+        if (!reason) return;
         CB.setRequestStatus([d.id], "declined").then(() => {
           CBAI.setAllocationEdit(d.id, null);
+          editing = null;
           showFeedback(`Request from ${esc(d.customer)} rejected.`);
-          render();
-        }).catch((err) => CBUI.toast("Couldn't reject: " + err.message));
+          return logOverrides([overrideEntry(d, "rejected", 0, reason)]).catch(logFailed);
+        }).then(render).catch((err) => CBUI.toast("Couldn't reject: " + err.message));
       }
 
       document.getElementById("approveAllBtn").addEventListener("click", () => {

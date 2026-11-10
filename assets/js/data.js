@@ -52,6 +52,13 @@ const CB = (function () {
     { id: "other",     label: "Others", points: 0, keywords: [] },
   ];
   const purposeById = (id) => PURPOSES.find((p) => p.id === id);
+  // A purpose's points as the scoring has learned them: the latest change
+  // staff applied, or the default above.
+  const lastWeightChange = (id) => (getState().weightChanges || []).find((w) => w.purpose === id) || null;
+  function purposePoints(id) {
+    const change = lastWeightChange(id);
+    return change ? change.points : (purposeById(id) || { points: 0 }).points;
+  }
   // Closest category for a free-text use case, or null if no keyword matches.
   // Keywords match at the start of a word, so "art" doesn't catch "start".
   function guessPurpose(text) {
@@ -214,6 +221,16 @@ const CB = (function () {
       // the Green AI ledger totals every staff member's runs.
       aiRuns: [],
 
+      // Each time staff approve a different amount than recommended, or
+      // reject a request, with their reason. Shared, and sent to Gemini's
+      // allocation review so it can spot patterns in what staff change.
+      overrides: [],
+
+      // Changes to a purpose's points in the allocation score, newest first.
+      // Gemini suggests them from the override log; staff apply them. Only
+      // ever added to, so the history of what the scoring learned stays.
+      weightChanges: [],
+
       // Collections uploaded by admin staff (from "no tracking system — collected when staff services machines").
       // Wet kg, roughly one week of each site's output. North's last round is
       // deliberately old so the "missing data" alert shows in the demo.
@@ -333,6 +350,8 @@ const CB = (function () {
     assumptions:  { order: () => 0 },
     // Starts empty (no seed), so an empty collection is normal.
     aiRuns:       { prefix: "A", order: newestFirst("createdAt"), seed: false },
+    overrides:    { prefix: "O", order: newestFirst("createdAt"), seed: false },
+    weightChanges: { prefix: "S", order: newestFirst("createdAt"), seed: false },
   };
   const ordered = (coll, list) => {
     const sorted = [...list].sort(CLOUD[coll].order);
@@ -517,6 +536,9 @@ const CB = (function () {
     addRequest: (fields) => addRecord("requests", fields),
     addUsageLog: (fields) => addRecord("usageLogs", fields),
     addAiRun: (fields) => addRecord("aiRuns", fields),
+    addOverride: (fields) => addRecord("overrides", fields),
+    addWeightChange: (fields) => addRecord("weightChanges", fields),
+    purposePoints, lastWeightChange,
     // A collection also adds its weight to the waste-by-day history.
     addCollection: (fields) => addRecord("collections", fields,
       (rec) => [["wasteHistory", wasteEntry(rec.collectedAt, rec.kg)]]),
