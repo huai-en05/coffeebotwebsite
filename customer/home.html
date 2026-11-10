@@ -61,7 +61,10 @@
 
       const state = CB.getState();
       const myName = "Simei RC Community Garden"; // demo identity for this logged-in off-taker
-      const mine = state.requests.filter((r) => r.customer === myName);
+      // Requests carry the email they were sent from; older seeded ones only have the name.
+      const mine = state.requests
+        .filter((r) => (r.email ? r.email === session.email : r.customer === myName))
+        .sort((a, b) => b.createdAt - a.createdAt);
       const myPartner = state.partners.find((p) => p.name === myName);
 
       document.getElementById("statTotalKg").textContent = (myPartner ? myPartner.kgReceived : 0).toFixed(1) + " kg";
@@ -81,8 +84,10 @@
             (r) => `
           <div class="row">
             <div class="row-main">
-              <div class="title">${r.useCase}</div>
-              <div class="meta">${r.volumeKg} kg · ${r.frequency} · ${CB.fmtDate(r.createdAt)}</div>
+              <div class="title">${CBUI.esc(r.useCase)}</div>
+              <div class="meta">${CBUI.esc(r.customer)} · ${r.volumeKg} kg · ${CBUI.esc(r.frequency)} · ${CB.fmtDate(r.createdAt)}</div>
+              ${r.status === "accepted" && r.allocatedKg !== undefined && r.allocatedKg < r.volumeKg
+                ? `<div class="meta"><strong>${r.allocatedKg} kg allocated</strong> of ${r.volumeKg} kg requested</div>` : ""}
             </div>
             <span class="pill ${r.status}">${r.status}</span>
           </div>`

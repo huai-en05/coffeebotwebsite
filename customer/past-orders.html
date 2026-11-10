@@ -49,7 +49,10 @@
       CBUI.mount("#footMount", CBUI.footer({ role: "customer" }));
       const MY_NAME = "Simei RC Community Garden";
       const state = CB.getState();
-      const mine = state.requests.filter((r) => r.customer === MY_NAME).sort((a, b) => b.createdAt - a.createdAt);
+      // Requests carry the email they were sent from; older seeded ones only have the name.
+      const mine = state.requests
+        .filter((r) => (r.email ? r.email === session.email : r.customer === MY_NAME))
+        .sort((a, b) => b.createdAt - a.createdAt);
 
       document.getElementById("sCount").textContent = mine.length;
       document.getElementById("sAccepted").textContent = mine.filter((r) => r.status === "accepted").length;
@@ -64,9 +67,10 @@
         body.innerHTML = mine.map((r) => `
           <tr>
             <td>${r.id}</td>
-            <td>${r.useCase}</td>
+            <td>${CBUI.esc(r.useCase)}</td>
             <td><span class="pill region">${CB.regionName(r.region)}</span></td>
-            <td class="num">${r.volumeKg} kg</td>
+            <td class="num">${r.volumeKg} kg${r.status === "accepted" && r.allocatedKg !== undefined && r.allocatedKg < r.volumeKg
+              ? `<br><span class="subtext" style="font-size:.75rem;">${r.allocatedKg} kg allocated</span>` : ""}</td>
             <td>${r.frequency}</td>
             <td>${CB.fmtDate(r.createdAt)}</td>
             <td><span class="pill ${r.status}">${r.status}</span></td>

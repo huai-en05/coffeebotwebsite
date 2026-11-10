@@ -30,6 +30,35 @@ const CB = (function () {
   // Partners pick up dried grounds from CoffeeBot's office, whatever their region.
   const PICKUP_POINT = { name: "CoffeeBot office", address: "8 Lor Bakar Batu, #05-01, Singapore 348743" };
 
+  // What a partner can say the grounds are for. `points` is the purpose's
+  // weight in the allocation score: CoffeeBot puts impact and genuine reuse
+  // first, so research, composting and community work rank above products
+  // made to sell. `keywords` sort a free-text use case (old requests, or an
+  // "Others" explanation) into the closest category. "other" scores nothing
+  // until staff or Gemini have looked at it.
+  const PURPOSES = [
+    { id: "research",  label: "Research & education", points: 16,
+      keywords: ["research", "study", "fyp", "student", "school", "lesson", "science", "experiment", "trial", "university", "polytechnic", "thesis"] },
+    { id: "compost",   label: "Compost & gardening", points: 14,
+      keywords: ["compost", "garden", "soil", "allotment", "plant", "worm", "vermi", "fertili", "mulch", "farm", "grow"] },
+    { id: "community", label: "Community project", points: 14,
+      keywords: ["community", "workshop", "volunteer", "charity", "resident", "outreach", "donat", "neighbour"] },
+    { id: "mushroom",  label: "Mushroom growing", points: 10,
+      keywords: ["mushroom", "fungi", "mycel", "substrate"] },
+    { id: "upcycle",   label: "Upcycled crafts & art", points: 6,
+      keywords: ["craft", "art", "dye", "paint", "ink", "confetti", "upcycl", "decor"] },
+    { id: "business",  label: "Business product (coffee scrubs, candles, etc.)", points: 4,
+      keywords: ["scrub", "soap", "candle", "sell", "market", "stall", "product", "brand", "cosmetic", "shop"] },
+    { id: "other",     label: "Others", points: 0, keywords: [] },
+  ];
+  const purposeById = (id) => PURPOSES.find((p) => p.id === id);
+  // Closest category for a free-text use case, or null if no keyword matches.
+  // Keywords match at the start of a word, so "art" doesn't catch "start".
+  function guessPurpose(text) {
+    const words = String(text || "").toLowerCase().split(/[^a-z]+/);
+    return PURPOSES.find((p) => p.keywords.some((k) => words.some((w) => w.startsWith(k)))) || null;
+  }
+
   // Regions and assumptions below are the defaults and the seed for
   // Firestore's `regions` and `assumptions` collections. Once the cloud
   // copy loads, applySettings() swaps it in place, so edits made in the
@@ -422,19 +451,22 @@ const CB = (function () {
     throw new Error("Couldn't save, please try again.");
   }
 
-  async function setRequestStatus(ids, status) {
+  // `allocatedKg` ({ id: kg }) records how much staff approved, which can
+  // be less than was requested.
+  async function setRequestStatus(ids, status, allocatedKg = {}) {
+    const changes = (id) => (id in allocatedKg ? { status, allocatedKg: allocatedKg[id] } : { status });
     if (cloudEnabled() && ids.length) {
       await commit(ids.map((id) => ({
-        update: { name: docName("requests", id), fields: { status: toValue(status) } },
-        updateMask: { fieldPaths: ["status"] },
+        update: { name: docName("requests", id), fields: toFields(changes(id)) },
+        updateMask: { fieldPaths: Object.keys(changes(id)) },
         currentDocument: { exists: true },
       })));
     }
-    setState((s) => s.requests.forEach((r) => { if (ids.includes(r.id)) r.status = status; }));
+    setState((s) => s.requests.forEach((r) => { if (ids.includes(r.id)) Object.assign(r, changes(r.id)); }));
   }
 
   return {
-    REGIONS, COLLECTABLE, PICKUP_POINT, ASSUMPTIONS,
+    REGIONS, COLLECTABLE, PICKUP_POINT, ASSUMPTIONS, PURPOSES, purposeById, guessPurpose,
     get DRY_RATIO() { return DRY_RATIO; },
     regionById, monthlyGroundsKg, dailyGroundsKg, dryKg,
     getState, setState, resetDemoData,

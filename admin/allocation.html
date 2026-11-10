@@ -29,7 +29,7 @@
     <div class="card">
       <div class="card-head">
         <h2>Ranked recommendation</h2>
-        <span class="subtext">Scored on quantity, regularity and a clear use case</span>
+        <span class="subtext">Scored on quantity, regularity and purpose. Edit an amount or reject a request before approving.</span>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -58,34 +58,85 @@
       CBUI.mount("#footMount", CBUI.footer({ role: "admin" }));
       document.getElementById("icCheck").innerHTML = CBUI.icon("check", "icon-sm");
 
+      const esc = CBUI.esc;
       let result = CBAI.recommendAllocation();
+      let editing = null; // id of the request whose amount is being edited
+
+      // How the purpose was decided, so staff know which ones to double-check.
+      function purposeTags(d) {
+        const p = d.purposeInfo;
+        const tags = [];
+        if (p.source === "review") tags.push(`<span class="pill pending" title="Doesn't fit a category. Check before approving.">Needs review</span>`);
+        if (p.source === "keywords") tags.push(`<span class="pill region" title="Sorted by keywords in the description. Generate an allocation review to let Gemini check it.">Sorted by keywords</span>`);
+        if (p.source === "ai") tags.push(`<span class="pill ${p.benefit === "low" ? "declined" : p.benefit === "high" ? "accepted" : "pending"}" title="${esc(p.reason || "")}">AI: ${esc(p.benefit)} community benefit</span>`);
+        return tags.length ? `<div class="alloc-tags">${tags.join("")}</div>` : "";
+      }
+
+      function allocateCell(d) {
+        if (editing === d.id) {
+          return `<div class="alloc-edit"><input type="number" id="editKg" min="0" step="0.1" value="${d.recommendedKg}" aria-label="Kilograms to allocate"> kg</div>`;
+        }
+        const why = d.edited ? "edited" : d.fulfilled ? "" : d.recommendedKg > 0 ? "partial" : "waitlisted";
+        return `${d.recommendedKg} kg${why ? `<br><span class="alloc-why">${why}</span>` : ""}`;
+      }
+
+      function actionButtons(d) {
+        if (editing === d.id) {
+          return `<button class="btn-primary btn-sm" data-save="${d.id}">Save</button>
+            <button class="btn-secondary btn-sm" data-cancel="${d.id}">Cancel</button>`;
+        }
+        return `<button class="btn-primary btn-sm" data-approve="${d.id}">Approve</button>
+          <button class="btn-secondary btn-sm" data-edit="${d.id}">Edit</button>
+          ${d.edited ? `<button class="btn-secondary btn-sm" data-reset="${d.id}" title="Go back to the recommended amount">Reset</button>` : ""}
+          <button class="btn-danger btn-sm" data-reject="${d.id}">Reject</button>`;
+      }
 
       function render() {
         result = CBAI.recommendAllocation();
-        const { decisions, remainingSupply } = result;
+        const { decisions, supply } = result;
 
         document.getElementById("sPending").textContent = decisions.length;
         document.getElementById("sFulfilled").textContent = decisions.filter((d) => d.fulfilled).length;
-        const totalSupply = Object.values(remainingSupply).reduce((a, b) => a + b, 0) +
-          decisions.reduce((a, d) => a + d.recommendedKg, 0);
-        document.getElementById("sSupply").textContent = totalSupply.toFixed(totalSupply < 1 ? 2 : 1) + " kg";
+        document.getElementById("sSupply").textContent = supply.toFixed(supply < 1 ? 2 : 1) + " kg";
 
         document.getElementById("rankBody").innerHTML = decisions.length
-          ? decisions.map((d, i) => `
+          ? decisions.map((d, i) => {
+            const note = d.useCase && d.useCase !== d.purposeInfo.purpose.label ? ` · ${esc(d.useCase)}` : "";
+            return `
             <tr>
               <td>${i + 1}</td>
-              <td style="min-width:220px;"><strong>${d.customer}</strong><div class="subtext" style="font-size:.78rem;">${d.frequency} · ${d.useCase}</div></td>
-              <td><span class="pill region">${CB.regionName(d.region)}</span></td>
+              <td style="min-width:220px;"><strong>${esc(d.customer)}</strong>
+                <div class="subtext" style="font-size:.78rem;">${esc(d.frequency)} · <strong>${esc(d.purposeInfo.purpose.label)}</strong>${note}</div>
+                ${purposeTags(d)}</td>
+              <td><span class="pill region">${esc(CB.regionName(d.region))}</span></td>
               <td class="num">${d.volumeKg} kg</td>
-              <td class="num" style="font-weight:700;color:${d.fulfilled ? "var(--ok)" : "var(--warn)"};">${d.recommendedKg} kg${d.fulfilled ? "" : "<br><span style='font-weight:500;font-size:.75rem;'>partial</span>"}</td>
+              <td class="num" style="font-weight:700;color:${d.fulfilled ? "var(--ok)" : "var(--warn)"};">${allocateCell(d)}</td>
               <td class="num">${d.score}</td>
-              <td><button class="btn-secondary btn-sm" data-approve="${d.id}">Approve</button></td>
-            </tr>`).join("")
+              <td><div class="alloc-actions">${actionButtons(d)}</div></td>
+            </tr>`;
+          }).join("")
           : `<tr><td colspan="7" class="empty-note" style="text-align:center;padding:24px;">No pending requests — everything's been decided.</td></tr>`;
 
-        decisions.forEach((d) => {
-          document.querySelector(`[data-approve="${d.id}"]`)?.addEventListener("click", () => approveOne(d.id, d.customer));
+        const on = (attr, fn) => document.querySelectorAll(`[data-${attr}]`).forEach((b) =>
+          b.addEventListener("click", () => fn(decisions.find((d) => d.id === b.dataset[attr]))));
+        on("approve", approveOne);
+        on("reject", rejectOne);
+        on("edit", (d) => { editing = d.id; render(); document.getElementById("editKg")?.select(); });
+        on("cancel", () => { editing = null; render(); });
+        on("reset", (d) => { CBAI.setAllocationEdit(d.id, null); render(); });
+        on("save", saveEdit);
+        document.getElementById("editKg")?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") saveEdit(decisions.find((d) => d.id === editing));
+          if (e.key === "Escape") { editing = null; render(); }
         });
+      }
+
+      function saveEdit(d) {
+        const kg = parseFloat(document.getElementById("editKg").value);
+        if (!(kg >= 0)) return CBUI.toast("Enter an amount of 0 kg or more.");
+        CBAI.setAllocationEdit(d.id, Math.round(kg * 100) / 100);
+        editing = null;
+        render();
       }
 
       function showFeedback(msg) {
@@ -96,18 +147,34 @@
         setTimeout(() => (bar.style.display = "none"), 4000);
       }
 
-      function approveOne(id, customer) {
-        CB.setRequestStatus([id], "accepted").then(() => {
-          showFeedback(`Allocation approved for ${customer}.`);
+      // Approving saves the amount allocated with the request, so the partner sees it.
+      function approve(decisions) {
+        const ids = decisions.map((d) => d.id);
+        const kg = Object.fromEntries(decisions.map((d) => [d.id, d.recommendedKg]));
+        return CB.setRequestStatus(ids, "accepted", kg).then(() => ids.forEach((id) => CBAI.setAllocationEdit(id, null)));
+      }
+
+      function approveOne(d) {
+        approve([d]).then(() => {
+          showFeedback(`${d.recommendedKg} kg approved for ${esc(d.customer)}.`);
           render();
         }).catch((err) => CBUI.toast("Couldn't approve: " + err.message));
       }
 
+      function rejectOne(d) {
+        if (!confirm(`Reject ${d.customer}'s request for ${d.volumeKg} kg?`)) return;
+        CB.setRequestStatus([d.id], "declined").then(() => {
+          CBAI.setAllocationEdit(d.id, null);
+          showFeedback(`Request from ${esc(d.customer)} rejected.`);
+          render();
+        }).catch((err) => CBUI.toast("Couldn't reject: " + err.message));
+      }
+
       document.getElementById("approveAllBtn").addEventListener("click", () => {
         const pending = new Set(CB.getState().requests.filter((r) => r.status === "pending").map((r) => r.id));
-        const ids = result.decisions.map((d) => d.id).filter((id) => pending.has(id));
-        CB.setRequestStatus(ids, "accepted").then(() => {
-          if (ids.length) showFeedback(`${ids.length} request${ids.length > 1 ? "s" : ""} approved for this week's allocation.`);
+        const decisions = result.decisions.filter((d) => pending.has(d.id));
+        approve(decisions).then(() => {
+          if (decisions.length) showFeedback(`${decisions.length} request${decisions.length > 1 ? "s" : ""} approved for this week's allocation.`);
           render();
         }).catch((err) => CBUI.toast("Couldn't approve: " + err.message));
       });
@@ -123,6 +190,8 @@
         task: "allocation",
         title: "Allocation review",
         buttonLabel: "Generate",
+        // Gemini sorts "Others" purposes, which changes the scores.
+        onGenerated: render,
       });
     });
   </script>

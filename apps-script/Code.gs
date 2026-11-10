@@ -63,6 +63,21 @@ const RESPONSE_SCHEMA = {
     },
     insights: { type: "ARRAY", items: { type: "STRING" } },
     actions: { type: "ARRAY", items: { type: "STRING" } },
+    // Allocation only: Gemini's sorting of requests that didn't pick a purpose.
+    // The site feeds these back into the allocation score.
+    purposeReviews: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          requestId: { type: "STRING" },
+          category: { type: "STRING" },
+          communityBenefit: { type: "STRING", enum: ["high", "medium", "low"] },
+          reason: { type: "STRING" },
+        },
+        required: ["requestId", "category", "communityBenefit", "reason"],
+      },
+    },
   },
   required: ["headline", "stats", "insights", "actions"],
 };
@@ -119,9 +134,17 @@ const TASKS = {
       CONTEXT,
       "",
       "Review this week's ranked allocation recommendation before an ops staffer approves it.",
-      "Each request was scored on requested quantity, recurring frequency and clarity of use case,",
-      "then supplied from the region's 7-day dry-ready (dried, weather-adjusted) forecast in score order. Point out partial or unfulfilled",
-      "requests, regions with leftover or short supply, and any request worth a second look.",
+      "Each request was scored on requested quantity, recurring frequency and purpose (research,",
+      "composting and community use score highest; products made to sell score low), then supplied",
+      "in score order from one pool: the week's dry-ready (dried, weather-adjusted) supply, since",
+      "every partner collects from CoffeeBot's office. Point out partial or unfulfilled requests,",
+      "leftover or short supply, staff-edited amounts, and any request worth a second look.",
+      "",
+      "Also fill purposeReviews: one entry for each request in purposesToReview. Set category to the",
+      "id of the closest entry in purposeCategories, or 'other' if none fits. Rate communityBenefit:",
+      "high for research, education, composting or community use; medium for small-scale or mixed",
+      "use; low for personal use, fun or anything that doesn't benefit society or the environment.",
+      "Give a one-sentence reason. Leave purposeReviews out if purposesToReview is empty.",
       "",
       "DATA:",
       JSON.stringify(data, null, 2),

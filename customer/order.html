@@ -44,8 +44,13 @@
             <span class="hint">Where you'll use the grounds.</span>
           </div>
           <div class="field">
-            <label for="rUse">What will you use the grounds for?</label>
-            <textarea class="ta" id="rUse" placeholder="e.g. Composting for raised garden beds, weekly" required></textarea>
+            <label for="rPurpose">What will you use the grounds for?</label>
+            <div class="input-box"><select id="rPurpose" required></select></div>
+          </div>
+          <div class="field">
+            <label for="rNote" id="rNoteLabel">Tell us more (optional)</label>
+            <textarea class="ta" id="rNote" maxlength="1000" placeholder="e.g. Composting for our raised garden beds, shared with residents"></textarea>
+            <span class="hint" id="rNoteHint">Anything that helps us understand how the grounds will be reused.</span>
           </div>
           <div class="form-row">
             <div class="field">
@@ -66,7 +71,7 @@
           <div class="field">
             <label for="rBid">Price per kg (optional)</label>
             <div class="input-box"><input type="number" id="rBid" placeholder="0.00" step="0.10" min="0"></div>
-            <span class="hint">$0 is the norm. Price doesn't improve your chances — a clear use case does.</span>
+            <span class="hint">$0 is the norm. Price doesn't improve your chances — what you'll use the grounds for does.</span>
           </div>
           <button type="submit" class="btn-primary">Submit request</button>
         </form>
@@ -114,7 +119,20 @@
       const MY_REGION = "east";
 
       document.getElementById("rRegion").innerHTML = CBUI.regionOptions(MY_REGION);
-      document.getElementById("rName").value = MY_NAME;
+      const purposeSelect = document.getElementById("rPurpose");
+      purposeSelect.innerHTML = '<option value="" disabled selected>Choose a purpose</option>' +
+        CB.PURPOSES.map((p) => `<option value="${p.id}">${CBUI.esc(p.label)}</option>`).join("");
+
+      // The explanation is optional, except for "Others", where it's all staff have to go on.
+      function syncNote() {
+        const other = purposeSelect.value === "other";
+        document.getElementById("rNote").required = other;
+        document.getElementById("rNoteLabel").textContent = other ? "Describe how you'll use the grounds" : "Tell us more (optional)";
+        document.getElementById("rNoteHint").textContent = other
+          ? "Required for Others. Staff (with help from AI) use this to decide where your request fits."
+          : "Anything that helps us understand how the grounds will be reused.";
+      }
+      purposeSelect.addEventListener("change", syncNote);
 
       function renderTicketNo() {
         const state = CB.getState();
@@ -140,10 +158,11 @@
 
       document.getElementById("requestForm").addEventListener("submit", function (e) {
         e.preventDefault();
-        const name = document.getElementById("rName").value.trim() || MY_NAME;
+        const name = document.getElementById("rName").value.trim();
         const region = document.getElementById("rRegion").value;
         const address = document.getElementById("rAddress").value.trim();
-        const useCase = document.getElementById("rUse").value.trim();
+        const purpose = purposeSelect.value;
+        const purposeNote = document.getElementById("rNote").value.trim();
         const volumeKg = parseFloat(document.getElementById("rVolume").value) || 0;
         const frequency = document.getElementById("rFreq").value;
         const priceOffered = parseFloat(document.getElementById("rBid").value) || 0;
@@ -151,13 +170,17 @@
         const btn = e.submitter;
         if (btn) btn.disabled = true;
         CB.addRequest({
-          customer: name, region, address, useCase, volumeKg, frequency, priceOffered,
+          customer: name, email: session.email, region, address,
+          // useCase stays the one-line description every list shows.
+          purpose, useCase: purposeNote || CB.purposeById(purpose).label,
+          ...(purposeNote ? { purposeNote } : {}),
+          volumeKg, frequency, priceOffered,
           status: "pending", createdAt: Date.now(),
         }).then(() => {
-          CBUI.toast("Request submitted. Track it on your Home page.");
+          CBUI.toast("Request submitted. It's under Recent requests on your Home page.");
           document.getElementById("requestForm").reset();
-          document.getElementById("rName").value = MY_NAME;
           document.getElementById("rRegion").value = MY_REGION;
+          syncNote();
           renderTicketNo();
         }).catch((err) => CBUI.toast("Couldn't submit request: " + err.message))
           .finally(() => { if (btn) btn.disabled = false; });

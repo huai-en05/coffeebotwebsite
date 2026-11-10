@@ -85,8 +85,18 @@ together:
      collection history, scaled by each region's known cup-volume baseline.
    - *Allocation recommendation*: scores each pending request on the
      factors CoffeeBot staff said they actually weigh (quantity
-     requested, consistency/frequency, clarity of use case), then
-     allocates forecasted supply to the highest-scoring requests first.
+     requested, consistency/frequency) plus its purpose. Research,
+     composting and community use score highest, and products made to
+     sell score low. The week's dry-ready supply is one pool, because
+     every partner collects from the office. It goes to the
+     highest-scoring requests first. Staff can edit an amount or reject
+     a request before approving, and the approved amount is saved with
+     the request.
+   - *Purpose sorting*: partners pick a purpose from a list. An "Others"
+     request (or an older free-text one) is sorted by keywords until
+     Gemini's allocation review sorts it and rates its community benefit.
+     A low rating (personal use, fun) scores no purpose points. Anything
+     neither can sort is flagged **Needs review** for staff.
 2. **Gemini via Google Apps Script** (`apps-script/Code.gs`) turns those
    numbers into generated stats, insights and next actions. Each of these
    admin pages has a **Generate** button:
@@ -105,8 +115,8 @@ overloaded even after the Apps Script's retries and fallback model), the
 panel shows a **rule-based version** in the same layout. It's built only
 from the rule engine's numbers, labelled with the reason Gemini failed,
 and not counted in the footprint ledger. For allocation, it lists which
-requests are fully or partly supplied, who is waitlisted, which requests
-need a clearer use case, and where supply is left over.
+requests are fully or partly supplied, who is waitlisted, which requests'
+purposes need checking, and where supply is left over.
 
 ### Measuring the AI's own footprint (EcoLogits)
 

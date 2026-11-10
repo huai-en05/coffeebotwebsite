@@ -63,8 +63,12 @@ grounds can be collected.
   collection" form logs this manually, by region).
 - No major restrictions on partners, but CoffeeBot weighs: quantity the
   partner can take, convenience of collection/delivery, and
-  frequency/consistency of reuse (→ these three factors drive the
-  allocation-recommendation scoring in `assets/js/ai.js: scoreRequest()`).
+  frequency/consistency of reuse (→ quantity and frequency drive the
+  allocation-recommendation scoring in `assets/js/ai.js: scoreRequest()`.
+  Convenience isn't scored, since every partner collects from the office).
+- Impact over revenue (below) → the score also weighs the request's
+  purpose. The categories and their points (`CB.PURPOSES` in
+  `assets/js/data.js`) are our own weighting, not CoffeeBot's figures.
 - CoffeeBot's stated priority is impact over revenue — most grounds are
   given away free (→ reflected in the "price offered" field being optional
   and explicitly deprioritized in the UI copy).

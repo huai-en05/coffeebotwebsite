@@ -36,22 +36,19 @@ const CBAlerts = (function () {
   }
 
   // Dried supply for the week (normal weather — the grounds still exist,
-  // they just dry slower) minus what pending requests in that region want.
+  // they just dry slower) minus what all pending requests want. It's one
+  // pool, as in allocation: partners collect everything from the office.
   // Regions already flagged as missing data are skipped: their supply is a guess.
   function excessAlert(state, missingIds) {
-    const regions = CBAI.dryForecastByRegion(7).filter((f) => !missingIds.includes(f.region.id)).map((f) => {
-      const supply = sum(f.unadjusted);
-      const wanted = sum(state.requests.filter((q) => q.status === "pending" && q.region === f.region.id).map((q) => q.volumeKg));
-      return { region: f.region, supply, unclaimed: Math.max(0, supply - wanted) };
-    }).filter((x) => x.unclaimed >= EXCESS_MIN_KG && x.unclaimed >= x.supply * EXCESS_MIN_SHARE)
-      .sort((a, b) => b.unclaimed - a.unclaimed);
-    if (!regions.length) return [];
-    const total = sum(regions.map((x) => x.unclaimed));
+    const supply = sum(CBAI.dryForecastByRegion(7).filter((f) => !missingIds.includes(f.region.id)).map((f) => sum(f.unadjusted)));
+    const wanted = sum(state.requests.filter((q) => q.status === "pending").map((q) => q.volumeKg));
+    const unclaimed = supply - wanted;
+    if (unclaimed < EXCESS_MIN_KG || unclaimed < supply * EXCESS_MIN_SHARE) return [];
     return [{
-      id: "excess-" + regions.map((x) => x.region.id).join("-"),
+      id: "excess",
       icon: "box",
-      title: `Excess supply in ${joinNames(regions.map((x) => x.region.name))}`,
-      body: `~${fmtKg(total)} of dried grounds this week has no request yet (${regions.map((x) => `${x.region.name} ${fmtKg(x.unclaimed)}`).join(", ")}). Offer it to recurring partners or find a new off-taker.`,
+      title: "Excess supply this week",
+      body: `~${fmtKg(unclaimed)} of the week's ${fmtKg(supply)} of dried grounds has no request yet. Offer it to recurring partners or find a new off-taker.`,
       action: { label: "Open allocation", href: "allocation.html" },
     }];
   }

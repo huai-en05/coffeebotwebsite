@@ -40,7 +40,8 @@ FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
 The rules allow anyone to:
 - read requests, usage logs and collections
 - add records that have exactly the expected fields and types
-- change a request's `status` to pending, accepted or declined
+- change a request's `status` to pending, accepted or declined, and record
+  the `allocatedKg` staff approved
 
 Everything else is blocked, including deletes. The site has no real
 sign-in, so the rules can't tell staff from partners.

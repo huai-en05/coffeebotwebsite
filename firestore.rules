@@ -4,7 +4,7 @@ rules_version = '2';
 // The site has no real sign-in, so anyone can read and add records. These
 // rules limit the damage: every record must have exactly the expected
 // fields and types, the only change allowed afterwards is a request's
-// status, and nothing can be deleted from the site.
+// status (and the amount allocated), and nothing can be deleted from the site.
 // Paste into Firebase console → Firestore → Rules, then Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -41,11 +41,16 @@ service cloud.firestore {
     match /requests/{id} {
       allow read: if true;
       allow create: if id.matches('R-[0-9]+')
-        // address is optional so the seeded demo requests (which have none) still load.
-        && allowed(['id', 'customer', 'region', 'useCase', 'volumeKg', 'frequency', 'priceOffered', 'status', 'createdAt'], ['address'])
+        // address, email and purpose are optional so the seeded demo requests (which have none) still load.
+        && allowed(['id', 'customer', 'region', 'useCase', 'volumeKg', 'frequency', 'priceOffered', 'status', 'createdAt'],
+                   ['address', 'email', 'purpose', 'purposeNote'])
         && request.resource.data.id == id
         && text(request.resource.data.customer, 120)
         && (!('address' in request.resource.data) || text(request.resource.data.address, 300))
+        && (!('email' in request.resource.data) || text(request.resource.data.email, 200))
+        && (!('purpose' in request.resource.data) || request.resource.data.purpose in
+              ['research', 'compost', 'community', 'mushroom', 'upcycle', 'business', 'other'])
+        && (!('purposeNote' in request.resource.data) || text(request.resource.data.purposeNote, 1000))
         && region(request.resource.data.region)
         && text(request.resource.data.useCase, 1000)
         && amount(request.resource.data.volumeKg)
@@ -53,8 +58,10 @@ service cloud.firestore {
         && amount(request.resource.data.priceOffered)
         && status(request.resource.data.status)
         && request.resource.data.createdAt is int;
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-        && status(request.resource.data.status);
+      // Staff decide a request, and may record how much they allocated.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'allocatedKg'])
+        && status(request.resource.data.status)
+        && (!('allocatedKg' in request.resource.data) || amount(request.resource.data.allocatedKg));
       allow delete: if false;
     }
 

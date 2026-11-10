@@ -104,8 +104,8 @@
       document.getElementById("latestRequests").innerHTML = latest.map((r) => `
         <div class="row">
           <div class="row-main">
-            <div class="title">${r.customer} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
-            <div class="meta">${r.useCase}</div>
+            <div class="title">${CBUI.esc(r.customer)} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
+            <div class="meta">${CBUI.esc(r.useCase)}</div>
             <div class="meta">${r.volumeKg} kg · ${CB.fmtDate(r.createdAt)}</div>
           </div>
           <span class="pill ${r.status}">${r.status}</span>

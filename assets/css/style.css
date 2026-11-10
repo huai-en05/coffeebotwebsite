@@ -237,6 +237,13 @@ table.data-table td{padding:12px;font-size:.92rem;border-bottom:2px dashed var(-
 table.data-table tr:last-child td{border-bottom:none;}
 table.data-table td.num,table.data-table th.num{text-align:right;font-variant-numeric:tabular-nums;}
 
+/* ---------- allocation table ---------- */
+.alloc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.alloc-why{font-weight:500;font-size:.75rem;}
+.alloc-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.alloc-edit{display:flex;align-items:center;justify-content:flex-end;gap:4px;}
+.alloc-edit input{width:72px;padding:4px 6px;border:2px solid var(--caramel);border-radius:8px;font:inherit;text-align:right;}
+
 /* ---------- region bars ---------- */
 .bar-row{margin-bottom:14px;}
 .bar-row:last-child{margin-bottom:0;}

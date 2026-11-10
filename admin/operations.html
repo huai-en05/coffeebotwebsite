@@ -89,8 +89,8 @@
         document.getElementById("requestsList").innerHTML = list.map((r) => `
           <div class="row">
             <div class="row-main">
-              <div class="title">${r.customer} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
-              <div class="meta">${r.useCase}</div>
+              <div class="title">${CBUI.esc(r.customer)} <span class="pill region" style="margin-left:6px;">${CB.regionName(r.region)}</span></div>
+              <div class="meta">${CBUI.esc(r.useCase)}</div>
               ${r.address ? `<div class="meta">${CBUI.esc(r.address)}</div>` : ""}
               <div class="meta">${r.volumeKg} kg · ${r.frequency} · ${CB.fmtDate(r.createdAt)}</div>
             </div>

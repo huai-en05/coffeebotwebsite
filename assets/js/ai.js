@@ -96,9 +96,42 @@ const CBAI = (function () {
   /* ---------------- rule-based allocation recommendation ---------------- */
   // Scores each pending request against the factors CoffeeBot staff said
   // they actually weigh (Q&A answer #1 & #2): quantity the partner can
-  // take, consistency/frequency of reuse, and convenience. Then allocates
-  // available forecasted supply to the highest-scoring requests first.
-  function scoreRequest(req) {
+  // take, consistency/frequency of reuse, and what the grounds are for.
+  // Then allocates the week's supply to the highest-scoring requests first.
+
+  // An "Others" purpose Gemini rated: its category's points are scaled by
+  // community benefit, so personal or just-for-fun use drops to the bottom.
+  const BENEFIT_WEIGHT = { high: 1, medium: 0.6, low: 0 };
+
+  // Gemini's latest sorting of requests that didn't pick a category, by id.
+  function aiPurposeReviews() {
+    const last = lastResult("allocation");
+    const reviews = (last && last.result && last.result.purposeReviews) || [];
+    return Object.fromEntries(reviews.map((r) => [r.requestId, r]));
+  }
+
+  // Where a request's purpose came from:
+  //   partner  — picked from the request form's list
+  //   ai       — Gemini sorted an "Others" or older free-text request
+  //   keywords — sorted by keywords in the free text, until Gemini has looked
+  //   review   — couldn't be sorted, so staff should check it
+  function purposeFor(req, reviews) {
+    const picked = req.purpose !== "other" && CB.purposeById(req.purpose);
+    if (picked) return { purpose: picked, source: "partner", points: picked.points };
+    const ai = reviews[req.id];
+    const aiPurpose = ai && CB.purposeById(ai.category);
+    if (aiPurpose) {
+      return {
+        purpose: aiPurpose, source: "ai", benefit: ai.communityBenefit, reason: ai.reason,
+        points: round1(aiPurpose.points * (BENEFIT_WEIGHT[ai.communityBenefit] ?? 1)),
+      };
+    }
+    const guess = CB.guessPurpose(req.purposeNote || req.useCase);
+    if (guess) return { purpose: guess, source: "keywords", points: guess.points };
+    return { purpose: CB.purposeById("other"), source: "review", points: 0 };
+  }
+
+  function scoreRequest(req, purposeInfo = purposeFor(req, aiPurposeReviews())) {
     let score = 0;
     // Prefer requests that can absorb a meaningful quantity (not oversized vs supply).
     score += Math.min(req.volumeKg, 10) * 2;
@@ -106,38 +139,66 @@ const CBAI = (function () {
     if (req.frequency === "Weekly") score += 20;
     else if (req.frequency === "Fortnightly") score += 12;
     else score += 4;
-    // A clearly described use case scores a little higher (meaningful reuse).
-    if (req.useCase && req.useCase.length > 20) score += 6;
+    // Impact first: research, composting and community use outrank products for sale.
+    score += purposeInfo.points;
     return Math.round(score * 10) / 10;
+  }
+
+  // Amounts staff typed in on the Allocation page, by request id. They stay
+  // in this browser until the request is approved or rejected.
+  const EDIT_STORAGE = "coffeebot_alloc_edits_v1";
+  function allocationEdits() {
+    try {
+      return JSON.parse(localStorage.getItem(EDIT_STORAGE) || "{}");
+    } catch (e) {
+      return {};
+    }
+  }
+  // Pass null to drop the edit and go back to the recommendation.
+  function setAllocationEdit(id, kg) {
+    const all = allocationEdits();
+    if (kg === null) delete all[id];
+    else all[id] = kg;
+    try {
+      localStorage.setItem(EDIT_STORAGE, JSON.stringify(all));
+    } catch (e) {}
   }
 
   function recommendAllocation() {
     const state = CB.getState();
     const pending = state.requests.filter((r) => r.status === "pending");
     // Partners receive dried grounds, so allocate from the 7-day
-    // weather-adjusted dry supply rather than the wet intake.
-    const supplyByRegion = {};
-    dryForecastByRegion(7).forEach((f) => {
-      supplyByRegion[f.region.id] = f.values.reduce((a, b) => a + b, 0);
-    });
+    // weather-adjusted dry supply rather than the wet intake. It's one pool:
+    // every region's grounds are dried at the office and partners collect
+    // there, so a South partner can be supplied even though South has no site.
+    const supply = sum(dryForecastByRegion(7).map((f) => sum(f.values)));
+    const reviews = aiPurposeReviews();
+    const edits = allocationEdits();
 
     const ranked = pending
-      .map((r) => ({ ...r, score: scoreRequest(r) }))
+      .map((r) => {
+        const purposeInfo = purposeFor(r, reviews);
+        return { ...r, purposeInfo, score: scoreRequest(r, purposeInfo) };
+      })
       .sort((a, b) => b.score - a.score);
 
-    const remaining = { ...supplyByRegion };
+    let remaining = supply;
     const decisions = ranked.map((r) => {
-      const avail = remaining[r.region] ?? 0;
-      const allocate = Math.min(r.volumeKg, Math.max(0, avail));
-      remaining[r.region] = avail - allocate;
+      // A staff edit wins, even past the forecast: they may know of stock on hand.
+      const edited = r.id in edits;
+      const allocate = edited ? edits[r.id] : Math.min(r.volumeKg, Math.max(0, remaining));
+      remaining -= allocate;
       return {
         ...r,
         recommendedKg: round2(allocate),
         fulfilled: allocate >= r.volumeKg - 0.01,
+        edited,
+        needsReview: r.purposeInfo.purpose.id === "other",
       };
     });
 
-    return { decisions, remainingSupply: remaining };
+    // remainingSupply goes negative when staff edits allocate more than the forecast.
+    return { decisions, supply: round2(supply), remainingSupply: round2(remaining) };
   }
 
   /* ---------------- data sent to Gemini, per task ---------------- */
@@ -174,22 +235,31 @@ const CBAI = (function () {
   }
 
   function allocationData() {
-    const { decisions, remainingSupply } = recommendAllocation();
+    const { decisions, supply, remainingSupply } = recommendAllocation();
     return {
       rankedRequests: decisions.map((d, i) => ({
         rank: i + 1,
         requester: d.customer,
         region: CB.regionName(d.region),
+        purpose: d.purposeInfo.purpose.label,
+        purposeSource: d.purposeInfo.source,
         useCase: d.useCase,
         frequency: d.frequency,
         requestedKg: d.volumeKg,
         recommendedKg: d.recommendedKg,
+        editedByStaff: d.edited,
         fullyFulfilled: d.fulfilled,
         score: d.score,
       })),
-      leftoverSupplyKgByRegion: Object.fromEntries(
-        Object.entries(remainingSupply).map(([id, kg]) => [CB.regionName(id), round1(kg)])
-      ),
+      weekDryReadySupplyKg: round1(supply),
+      leftoverSupplyKg: round1(remainingSupply),
+      // Requests that didn't pick a category (or predate the list) for Gemini to sort.
+      purposeCategories: CB.PURPOSES.map((p) => ({ id: p.id, label: p.label })),
+      purposesToReview: decisions.filter((d) => d.purposeInfo.source !== "partner").map((d) => ({
+        requestId: d.id,
+        requester: d.customer,
+        explanation: d.purposeNote || d.useCase,
+      })),
     };
   }
 
@@ -256,8 +326,7 @@ const CBAI = (function () {
   const list = (names) => names.length <= 2 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
 
   function allocationFallback() {
-    const { decisions, remainingSupply } = recommendAllocation();
-    const supply = sum(Object.values(remainingSupply)) + sum(decisions.map((d) => d.recommendedKg));
+    const { decisions, supply, remainingSupply } = recommendAllocation();
     if (!decisions.length) {
       return {
         headline: "No pending requests — nothing to allocate this week.",
@@ -272,25 +341,28 @@ const CBAI = (function () {
     const full = decisions.filter((d) => d.fulfilled);
     const partial = decisions.filter((d) => !d.fulfilled && d.recommendedKg > 0);
     const none = decisions.filter((d) => d.recommendedKg === 0);
-    const unclear = decisions.filter((d) => !d.useCase || d.useCase.length <= 20);
+    const unclear = decisions.filter((d) => d.needsReview);
+    const lowBenefit = decisions.filter((d) => d.purposeInfo.benefit === "low");
     const requested = sum(decisions.map((d) => d.volumeKg));
     const allocated = sum(decisions.map((d) => d.recommendedKg));
-    const leftover = Object.entries(remainingSupply).filter(([, v]) => v >= 0.05).sort((a, b) => b[1] - a[1]);
+    const leftover = remainingSupply >= 0.05 ? remainingSupply : 0;
     const top = decisions[0];
 
     const insights = [
-      `${top.customer} ranks first (score ${top.score}): a ${top.frequency.toLowerCase()} request for ${top.volumeKg} kg in ${CB.regionName(top.region)}.`,
+      `${top.customer} ranks first (score ${top.score}): a ${top.frequency.toLowerCase()} request for ${top.volumeKg} kg for ${top.purposeInfo.purpose.label.toLowerCase()}.`,
     ];
-    if (partial.length) insights.push(`${list(partial.map((d) => d.customer))} can only be partly supplied from their region's forecast.`);
-    if (none.length) insights.push(`${list(none.map((d) => d.customer))} get nothing this week — their region's supply is used up by higher-ranked requests.`);
-    if (leftover.length) insights.push(`Unallocated supply remains in ${list(leftover.map(([id, v]) => `${CB.regionName(id)} (${kg(v)})`))}.`);
+    if (partial.length) insights.push(`${list(partial.map((d) => d.customer))} can only be partly supplied this week.`);
+    if (none.length) insights.push(`${list(none.map((d) => d.customer))} get nothing this week — the supply is used up by higher-ranked requests.`);
+    if (remainingSupply < -0.05) insights.push(`Staff edits allocate ${kg(-remainingSupply)} more than the week's forecast supply.`);
+    if (leftover) insights.push(`${kg(leftover)} of dried grounds is still unallocated.`);
 
     const actions = [];
     if (full.length) actions.push(`Approve the full allocations for ${list(full.map((d) => d.customer))}.`);
     partial.forEach((d) => actions.push(`Offer ${d.customer} a partial pickup of ${d.recommendedKg} kg, or roll the rest to next week.`));
     none.forEach((d) => actions.push(`Tell ${d.customer} their request is waitlisted for next week's supply.`));
-    unclear.forEach((d) => actions.push(`Ask ${d.customer} to describe how they'll use the grounds before approving.`));
-    if (leftover.length) actions.push(`Offer the leftover ${CB.regionName(leftover[0][0])} supply to recurring partners nearby.`);
+    unclear.forEach((d) => actions.push(`Check what ${d.customer} will use the grounds for — it doesn't fit a category.`));
+    lowBenefit.forEach((d) => actions.push(`${d.customer}'s use looks personal rather than for the community — consider rejecting it.`));
+    if (leftover) actions.push("Offer the leftover supply to recurring partners.");
 
     return {
       headline: `${full.length} of ${decisions.length} requests can be fully supplied from ${kg(supply)} of dried grounds.`,
@@ -298,7 +370,7 @@ const CBAI = (function () {
         { label: "Pending", value: String(decisions.length), note: "Requests scored this week.", tone: "neutral" },
         { label: "Fully supplied", value: `${full.length} of ${decisions.length}`, note: "Requests covered by their region's forecast.", tone: full.length === decisions.length ? "good" : "watch" },
         { label: "Allocated", value: kg(allocated), note: `Out of ${kg(requested)} requested.`, tone: allocated >= requested ? "good" : "watch" },
-        { label: "Leftover", value: kg(sum(leftover.map(([, v]) => v))), note: "Dried supply not yet claimed.", tone: "neutral" },
+        { label: "Leftover", value: kg(leftover), note: "Dried supply not yet claimed.", tone: "neutral" },
       ],
       insights,
       actions: actions.slice(0, 5),
@@ -436,7 +508,7 @@ const CBAI = (function () {
   return {
     endpoint,
     forecastTotal, forecastByRegion, dryForecastByRegion,
-    scoreRequest, recommendAllocation,
+    scoreRequest, recommendAllocation, setAllocationEdit,
     generate, ruleBased, lastResult, footprintTotals,
   };
 })();
