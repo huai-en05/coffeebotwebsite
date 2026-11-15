@@ -28,8 +28,13 @@ FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
      the grid runs mostly on gas. A low-CO₂ region further away adds a few
      hundred milliseconds per request.
    - The data here is a few KB and is read a handful of times per page load,
-     so either choice has a tiny footprint. Pick whichever trade-off you can
-     justify.
+     so either choice has a tiny footprint.
+   - **This project uses Stockholm (`europe-north2`).** Google lists it at
+     100% CFE, the top possible score, because Sweden's
+     grid runs on hydro, nuclear and wind. That makes it greener than
+     Singapore or anywhere else in South-East Asia. The cost is a slightly
+     slower round trip from Singapore, which pages barely notice because
+     they load the shared data once when they open.
 4. **Rules**: choose **production mode**. The real rules are published in
    step 2.
 

@@ -35,6 +35,10 @@ Operations and Allocation pages on any device, and a status staff set shows
 up for the partner. Pages load the latest data when they open, and fetch it
 again when you return to the tab. They don't poll.
 
+- The database is hosted in **Stockholm** (`europe-north2`), which Google
+  lists at 100% carbon-free energy. That's greener than any South-East
+  Asian region, including Singapore, where the grid runs mostly on gas.
+  See [docs/firebase-setup.md](docs/firebase-setup.md) for the trade-off.
 - The site talks to Firestore over plain REST calls, with no Firebase SDK,
   so no extra JavaScript is downloaded on any page.
 - Each empty collection is seeded once with the Q&A demo data, except
