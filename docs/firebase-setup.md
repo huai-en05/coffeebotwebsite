@@ -1,7 +1,9 @@
 # Setting up Firestore for shared data
 
-Requests, usage logs, collections, partners, the waste-by-day history and
-each AI generation's footprint (`aiRuns`) are stored in Cloud Firestore, so a
+Requests, usage logs, collections, partners, the waste-by-day history,
+each AI generation's footprint (`aiRuns`), the allocation override log
+(`overrides`), learned scoring changes (`weightChanges`) and the forecast
+settings (`regions`, `assumptions`) are stored in Cloud Firestore, so a
 request a partner submits shows up for staff on any device. The site uses
 Firestore's REST API directly, with no Firebase SDK and no API key. Access
 is controlled by the security rules in [`firestore.rules`](../firestore.rules).
@@ -38,12 +40,16 @@ FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
    click **Publish**.
 
 The rules allow anyone to:
-- read requests, usage logs and collections
-- add records that have exactly the expected fields and types
+- read every collection the site uses
+- add records that have exactly the expected fields and types: requests,
+  usage logs, collections, `aiRuns`, `overrides` and `weightChanges` from
+  the site's forms, and `partners`, `wasteHistory`, `regions` and
+  `assumptions` so an empty database can be seeded
 - change a request's `status` to pending, accepted or declined, and record
   the `allocatedKg` staff approved
 
-Everything else is blocked, including deletes. The site has no real
+Everything else is blocked, including deletes and any other edit to an
+existing record. The site has no real
 sign-in, so the rules can't tell staff from partners.
 
 ## 3. Check it works
@@ -52,6 +58,9 @@ sign-in, so the rules can't tell staff from partners.
    database empty and seeds it with the demo data from the staff Q&A. In
    the console you should see `requests`, `usageLogs`, `collections`,
    `partners`, `wasteHistory`, `regions` and `assumptions` collections.
+   `aiRuns`, `overrides` and `weightChanges` aren't seeded. They appear
+   the first time staff generate an AI result, override an allocation or
+   apply a scoring change.
 2. In one browser, log in as a customer and submit a request on
    **Order**. A new `R-n` document appears in the console.
 3. In another browser or an incognito window, log in as admin and open

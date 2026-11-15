@@ -27,15 +27,18 @@ Demo logins are prefilled on both login screens — just click **Log In**:
 
 ## Shared data (Firestore)
 
-Requests, usage logs, collections, partners and the waste-by-day history,
-along with approvals, are stored in **Cloud Firestore**. A request a partner submits shows up on the staff
+Requests (with their approvals), usage logs, collections, partners, the
+waste-by-day history, AI runs (`aiRuns`), the override log (`overrides`)
+and learned scoring changes (`weightChanges`) are stored in **Cloud
+Firestore**. A request a partner submits shows up on the staff
 Operations and Allocation pages on any device, and a status staff set shows
 up for the partner. Pages load the latest data when they open, and fetch it
 again when you return to the tab. They don't poll.
 
 - The site talks to Firestore over plain REST calls, with no Firebase SDK,
   so no extra JavaScript is downloaded on any page.
-- Each empty collection is seeded once with the Q&A demo data.
+- Each empty collection is seeded once with the Q&A demo data, except
+  `aiRuns`, `overrides` and `weightChanges`, which start empty.
 - `localStorage` stays as a cache, so pages still render if Firestore can't
   be reached.
 - The regions and the staff's stated assumptions (cups per month, grams per
@@ -63,6 +66,15 @@ in the browser only.
   - a wet week with 3+ poor drying days.
   Alerts can be hidden for a day.
 
+## Collection map
+
+The admin Overview has a map of the four collection sites and the
+CoffeeBot office, drawn with [Leaflet](https://leafletjs.com) on
+[OpenStreetMap](https://www.openstreetmap.org) tiles (no API key). Each
+site's marker is sized by the wet kg collected there, and hovering or
+tapping it shows the site's figures. Site coordinates are in
+`SITE_COORDS` in `assets/js/app.js`.
+
 ## Region categorisation
 
 Per CoffeeBot staff feedback ("add categorisation based on regions... so
@@ -80,9 +92,11 @@ AI is built into the admin side, not an optional add-on. Two layers run
 together:
 
 1. **Rule-based engine** (`assets/js/ai.js`) produces the numbers:
-   - *Forecasting*: a 7-day-ahead projection per region, blending a
-     7-day moving average with a least-squares linear trend over recent
-     collection history, scaled by each region's known cup-volume baseline.
+   - *Forecasting*: a 7-day-ahead projection of total wet grounds,
+     blending a least-squares linear trend over the waste-by-day history
+     (60%) with the last 7 days' average (40%). The total is split across
+     the collectable regions by each one's share of the cup-volume
+     baseline.
    - *Allocation recommendation*: scores each pending request on the
      factors CoffeeBot staff said they actually weigh (quantity
      requested, consistency/frequency) plus its purpose. Research,
@@ -123,8 +137,9 @@ URL, set in `assets/js/config.js`.
 If Gemini can't answer (endpoint not set, key problem, or Google
 overloaded even after the Apps Script's retries and fallback model), the
 panel shows a **rule-based version** in the same layout. It's built only
-from the rule engine's numbers, labelled with the reason Gemini failed,
-and not counted in the footprint ledger. For allocation, it lists which
+from the rule engine's numbers, labelled with a short reason Gemini failed
+(the full error is in the browser console), and not counted in the
+footprint ledger. For allocation, it lists which
 requests are fully or partly supplied, who is waitlisted, which requests'
 purposes need checking, and where supply is left over.
 
@@ -160,7 +175,7 @@ assets/doodles/          free doodle illustrations and squiggles — credits in 
 assets/js/config.js      AI_ENDPOINT (Apps Script URL) and FIREBASE_PROJECT_ID
 assets/js/data.js        region data, seed/demo state, Firestore sync with a localStorage cache
 firestore.rules          Firestore security rules: record shapes, status-only updates, no deletes
-assets/js/app.js         top nav, footer, doodle icons, auth guard, charts, AI panel, Green AI ledger
+assets/js/app.js         top nav, footer, doodle icons, auth guard, charts, collection map, AI panel, Green AI ledger
 assets/js/ai.js          rule-based forecasting/allocation (wet + dry), Gemini calls, footprint tally
 assets/js/weather.js     Open-Meteo drying forecast, cached; weather card
 assets/js/alerts.js      missing-data / excess-supply / wet-week alerts, bell + Needs attention card

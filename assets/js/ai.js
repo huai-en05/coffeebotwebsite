@@ -9,7 +9,8 @@
         generated stats, insights and next actions. The API key
         is stored in Apps Script — the browser never sees it.
    Every generation comes back with an EcoLogits estimate of its
-   energy, emissions and water use, tallied in a local ledger.
+   energy, emissions and water use, saved to the shared aiRuns
+   collection for the Green AI ledger.
    If Gemini can't answer, ruleBased() writes the same panel from
    the rule engine alone, so admins always get a usable result.
    ========================================================= */
@@ -26,10 +27,11 @@ const CBAI = (function () {
   }
 
   /* ---------------- rule-based forecasting ---------------- */
-  // Simple, explainable statistics: a 7-day moving average blended
-  // with a least-squares linear trend over the recent history,
-  // then clamped to stay within a sane band of the region's known
-  // baseline (so a single noisy day can't send the forecast wild).
+  // Simple, explainable statistics: a least-squares linear trend over
+  // the waste-by-day history, blended 60/40 with the last 7 days'
+  // average so a single noisy day can't send the forecast wild. The
+  // system-wide total is then split across regions by their cup-volume
+  // baselines (forecastByRegion).
   function linearTrend(values) {
     const n = values.length;
     const xs = values.map((_, i) => i);
@@ -327,7 +329,7 @@ const CBAI = (function () {
   const GENERATE_TIMEOUT_MS = 45000;
   async function generate(task) {
     const url = endpoint();
-    if (!url) throw new Error("not_configured");
+    if (!url) throw new Error("AI endpoint not connected yet (AI_ENDPOINT in config.js is empty)");
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), GENERATE_TIMEOUT_MS);
     let res;
@@ -400,7 +402,7 @@ const CBAI = (function () {
       headline: `${full.length} of ${decisions.length} requests can be fully supplied from ${kg(supply)} of dried grounds.`,
       stats: [
         { label: "Pending", value: String(decisions.length), note: "Requests scored this week.", tone: "neutral" },
-        { label: "Fully supplied", value: `${full.length} of ${decisions.length}`, note: "Requests covered by their region's forecast.", tone: full.length === decisions.length ? "good" : "watch" },
+        { label: "Fully supplied", value: `${full.length} of ${decisions.length}`, note: "Requests covered by the week's dried supply.", tone: full.length === decisions.length ? "good" : "watch" },
         { label: "Allocated", value: kg(allocated), note: `Out of ${kg(requested)} requested.`, tone: allocated >= requested ? "good" : "watch" },
         { label: "Leftover", value: kg(leftover), note: "Dried supply not yet claimed.", tone: "neutral" },
       ],

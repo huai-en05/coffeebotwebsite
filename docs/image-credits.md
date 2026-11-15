@@ -11,6 +11,12 @@ browns; nothing else was edited apart from cropping and tidying the SVG files.
 | UI icons (home, bell, sun, rain, leaf, arrows…) | Nav, buttons, step cards | [Oreo Doodle Icons](https://icon-sets.iconify.design/doodle-icons/) by Nicole Tang, via Iconify | MIT |
 | Coffee cup icon | Logo | [Pepicons Pencil](https://pepicons.com) by CyCraft, via Iconify | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) |
 
+The Overview's collection map uses tiles from
+[OpenStreetMap](https://www.openstreetmap.org/copyright) (data © OpenStreetMap
+contributors, [ODbL](https://opendatacommons.org/licenses/odbl/)), drawn
+with [Leaflet](https://leafletjs.com) (BSD-2-Clause). The OpenStreetMap
+credit is shown on the map itself.
+
 The CC BY 4.0 sets need attribution. It's given in the site footer and in
 this file.
 

@@ -79,10 +79,14 @@ The free tier is enough for this prototype.
 
 ## 6. Connect the website
 
-Open [`assets/js/config.js`](../assets/js/config.js) and paste the URL:
+Open [`assets/js/config.js`](../assets/js/config.js) and paste the URL
+into `AI_ENDPOINT`. Leave the other settings as they are:
 
 ```js
 const CB_CONFIG = {
+  WEATHER_LAT: 1.3521,
+  WEATHER_LON: 103.8198,
+  FIREBASE_PROJECT_ID: "coffeebot-b7c9c",
   AI_ENDPOINT: "https://script.google.com/macros/s/XXXXXXXX/exec",
 };
 ```
@@ -102,14 +106,15 @@ same `/exec` URL, so `config.js` doesn't need changing.
 
 The site never shows a blank error. If the call fails for any reason, the
 panel shows a rule-based version of the same stats, insights and actions,
-with a note saying why Gemini was unavailable. Click **Regenerate** to try
-Gemini again.
+with a short note saying why Gemini was unavailable. The full error is
+logged in the browser console (DevTools → Console). Click **Regenerate**
+to try Gemini again.
 
 ## Troubleshooting
 
 | What you see | Fix |
 |---|---|
-| "AI endpoint not connected yet" | `AI_ENDPOINT` in `assets/js/config.js` is empty. |
+| "Reason: AI endpoint not connected yet" | `AI_ENDPOINT` in `assets/js/config.js` is empty. |
 | `GEMINI_API_KEY is not set in Script Properties.` | Repeat step 3 and check the property name is spelled exactly right. |
 | `Gemini HTTP 400 ... API key not valid` | The key was mistyped or deleted. Create a new one in AI Studio. |
 | `Gemini HTTP 404 ... model ... not found` | The model was retired. Set `GEMINI_MODEL` to a current model name. |

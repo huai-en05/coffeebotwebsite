@@ -303,13 +303,16 @@ const CBUI = (function () {
       </div>`;
   }
 
-  // The full reason stays on the payload (and in the console) for debugging.
+  // Shows a short form of why Gemini failed: the text before the first
+  // colon, so an HTTP error drops the raw response body. The full reason
+  // stays on the payload (and in the console) for debugging.
   function fallbackNoticeHtml(reason) {
     if (reason) console.warn("Gemini unavailable:", reason);
+    const short = reason ? String(reason).split(":")[0].trim().slice(0, 140) : "";
     return `
       <div class="ai-fallback">
-        <strong>Gemini is down right now.</strong>
-        <p>Showing the rule-based version instead. Click Regenerate to try again.</p>
+        <strong>Gemini is unavailable right now.</strong>
+        <p>${short ? `Reason: ${esc(short)}. ` : ""}Showing the rule-based version instead. Click Regenerate to try again.</p>
       </div>`;
   }
 

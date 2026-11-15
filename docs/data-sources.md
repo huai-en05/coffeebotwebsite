@@ -98,8 +98,10 @@ grain, `assets/js/data.js` → `REGIONS` is the only place that needs updating.
 - **Alerts** (`assets/js/alerts.js`):
   - *Missing data*: a collectable region with no collection logged for more
     than 7 days.
-  - *Excess supply*: a region (with recent data) whose dried supply for the
-    week, less pending requests, is at least 0.25 kg and at least half its supply.
+  - *Excess supply*: the week's dried supply (normal drying weather, one
+    pool across all regions, leaving out regions flagged for missing
+    data), less all pending requests, is at least 0.25 kg and at least
+    half the supply.
   - *Wet week*: 3 or more poor drying days in the next 7.
 
 ## Invented for demo purposes (not from the Q&A)
@@ -107,13 +109,19 @@ grain, `assets/js/data.js` → `REGIONS` is the only place that needs updating.
 - Exact daily collection figures (North's last one is 9 days old on
   purpose so the missing-data alert shows), individual request tickets, and usage
   logs shown on first load — seeded in `assets/js/data.js: defaultState()`
-  so the dashboards aren't empty. Everything you add through the forms
-  (new requests, usage logs, collections, approvals) persists in your
-  browser's localStorage from then on.
+  so the dashboards aren't empty. This seed is written to Firestore once,
+  when the database is empty. Everything you add through the forms (new
+  requests, usage logs, collections, approvals) is saved to Firestore,
+  with a copy cached in your browser's localStorage (see
+  [firebase-setup.md](firebase-setup.md)).
 - The CO2e-per-kg conversion factor (2.8) — carried over from the team's
-  original HTML prototype, labelled there as a placeholder. Swap in a real
-  factor in `assets/js/data.js` / `admin/operations.html` when CoffeeBot
-  can supply one.
-- The 6-week forecast-accuracy numbers on the Forecast page — illustrative
-  only, scaled to the four sites (~3–4 kg wet a week) to show the chart shape; replace with real predicted-vs-actual
-  history once a few weeks of real forecasts have run.
+  original HTML prototype, labelled there as a placeholder. It's applied
+  to usage logs in `customer/dashboard.html` and `customer/order.html`,
+  and was used to work out the seed partners' `co2eKg` values in
+  `assets/js/data.js` (the admin pages add those up). Swap in a real
+  factor in all three places when CoffeeBot can supply one.
+- The 6-week forecast-accuracy numbers on the Forecast page and the 91%
+  "Forecast accuracy" figure on Operations — illustrative only, scaled to
+  the four sites (~3–4 kg wet a week) to show the chart shape. Replace
+  them with real predicted-vs-actual history once a few weeks of real
+  forecasts have run.

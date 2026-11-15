@@ -314,11 +314,11 @@ function json_(obj) {
 function testGemini() {
   const sample = {
     next7DaysByRegion: [
-      { region: "North", location: "Republic Polytechnic", kg: 1.5 },
-      { region: "East", location: "Changi General Hospital", kg: 2.3 },
+      { region: "North", location: "Woodlands 11", totalWetKg: 0.9 },
+      { region: "East", location: "Changi Airport T2", totalWetKg: 1.2 },
     ],
-    next7DayTotalKg: 3.8,
-    last7DayTotalKg: 3.6,
+    next7DayWetTotalKg: 2.1,
+    last7DayWetTotalKg: 2.0,
   };
   const gen = callGemini_(TASKS.forecast(sample));
   Logger.log("Model used: " + gen.model);
